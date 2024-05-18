@@ -217,8 +217,8 @@ object XmlDslParser {
 			val expr = parseExpression(it.expression(), processOption, errorHandler, currentElement, currentScope)
 			if(expr !is DslBoolean) {
 				errorHandler.handleException(it.IF().symbol.text,
-					DslIfWhileOperationException(it.IF().symbol, it.expression().start,
-						it.expression().stop, expr.getType()))
+					DslTypeException(it.expression().start, it.expression().stop,
+						DslValueType.Boolean, expr.getType()))
 				return JumpType.Next
 			}
 			if(expr.value) {
@@ -245,8 +245,8 @@ object XmlDslParser {
 				while(true) {
 					if(expr !is DslBoolean) {
 						errorHandler.handleException(w.WHILE().symbol.text,
-							DslIfWhileOperationException(w.WHILE().symbol, w.expression().start,
-								w.expression().stop, expr.getType()))
+							DslTypeException(w.expression().start, w.expression().stop,
+								DslValueType.Boolean, expr.getType()))
 						break
 					}
 					if(!expr.value) break
@@ -270,8 +270,8 @@ object XmlDslParser {
 		val expr = parseExpression(ctx.expression(), processOption, errorHandler, currentElement, currentScope)
 		if(expr !is DslList) {
 			errorHandler.handleException(ctx.FOR().symbol.text,
-				DslForOperationException(ctx.FOR().symbol, ctx.expression().start,
-					ctx.expression().stop, expr.getType()))
+				DslTypeException(ctx.expression().start, ctx.expression().stop,
+					DslValueType.List, expr.getType()))
 			return
 		}
 		val id = ctx.identifier().Identifier().symbol

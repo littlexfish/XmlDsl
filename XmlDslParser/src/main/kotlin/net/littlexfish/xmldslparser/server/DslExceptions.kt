@@ -15,10 +15,6 @@ class DslFieldCannotModifyException(name: String, val stmtBegin: Token?, val stm
 	DslParseException(stmtBegin, stmtEnd, "Field \"$name\" cannot be modified")
 class DslFieldNotInitializedException(symbol: Token?, name: String) :
 	DslParseException(symbol, symbol, "Field \"$name\" not initialized")
-class DslIfWhileOperationException(beginSymbol: Token, endSymbol: Token, val flowSymbol: Token, val expectType: DslValueType) :
-	DslParseException(beginSymbol, endSymbol, "flow \"${flowSymbol.text}\" must give a boolean result, but got $expectType")
-class DslForOperationException(beginSymbol: Token, endSymbol: Token, val flowSymbol: Token, val gotType: DslValueType) :
-	DslParseException(beginSymbol, endSymbol, "flow \"${flowSymbol.text}\" must give a list result, but got $gotType")
 class DslNonLoopJumpException(symbol: Token) :
 	DslParseException(symbol, symbol, "Cannot do ${symbol.text} operation outside of loop")
 class DslListAccessException(beginSymbol: Token?, endSymbol: Token, val gotType: DslValueType) :
