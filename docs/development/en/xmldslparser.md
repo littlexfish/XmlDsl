@@ -21,15 +21,12 @@ root package contains the main library class interfaces.
 
 Design details will create as feature issues.
 
-- [ ] Add unit tests
 - [ ] `include` function
 - [ ] `import` function
 - [ ] `export` function
 - [ ] add function type
 - [ ] add function call
 - [ ] add type process
-- [ ] add default field interface
-- [ ] let DslElement as a type
 - [ ] ensure if error occurs, will return null instead empty
 - [ ] code highlighter
 

@@ -20,10 +20,7 @@ WIP
 Design details will create as feature issues.
 
 - [ ] Add unit tests
-- [ ] file input
-- [ ] file output
-- [ ] user input
-- [ ] user output
+- [ ] user input // temporary disabled due to the java command line input implementation
 - [ ] highlighter structure
 
 ## Well-known Issues
