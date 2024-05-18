@@ -161,7 +161,7 @@ object XmlDslParser {
 			val dslList = left.value
 			if(dslList !is DslList) {
 				errorHandler.handleException(symbol.text,
-					DslTypeException(symbol, symbol, "list", dslList.getType()))
+					DslTypeException(symbol, symbol, DslValueType.List, dslList.getType()))
 				return
 			}
 			val ex = ctx.listAccess().expression()
@@ -315,7 +315,7 @@ object XmlDslParser {
 		if(ctx.DISJ().isNotEmpty() && expr !is DslBoolean) {
 			errorHandler.handleException(ctx.conjunction(0).text,
 				DslTypeException(ctx.conjunction(0).start, ctx.conjunction(0).stop,
-					"boolean", expr.getType()))
+					DslValueType.Boolean, expr.getType()))
 			return DslEmpty
 		}
 		for(i in 0..<ctx.DISJ().size) {
@@ -323,7 +323,7 @@ object XmlDslParser {
 			if(right !is DslBoolean) {
 				errorHandler.handleException(ctx.conjunction(i + 1).text,
 					DslTypeException(ctx.conjunction(i + 1).start, ctx.conjunction(i + 1).stop,
-						"boolean", right.getType()))
+						DslValueType.Boolean, right.getType()))
 				return DslEmpty
 			}
 			expr = DslBoolean((expr as DslBoolean).value || right.value)
@@ -337,7 +337,7 @@ object XmlDslParser {
 		if(ctx.CONJ().isNotEmpty() && expr !is DslBoolean) {
 			errorHandler.handleException(ctx.equalityComparison(0).text,
 				DslTypeException(ctx.equalityComparison(0).start, ctx.equalityComparison(0).stop,
-					"boolean", expr.getType()))
+					DslValueType.Boolean, expr.getType()))
 			return DslEmpty
 		}
 		for(i in 0..<ctx.CONJ().size) {
@@ -345,7 +345,7 @@ object XmlDslParser {
 			if(right !is DslBoolean) {
 				errorHandler.handleException(ctx.equalityComparison(i + 1).text,
 					DslTypeException(ctx.equalityComparison(i + 1).start, ctx.equalityComparison(i + 1).stop,
-						"boolean", right.getType()))
+						DslValueType.Boolean, right.getType()))
 				return DslEmpty
 			}
 			expr = DslBoolean((expr as DslBoolean).value && right.value)
@@ -379,7 +379,7 @@ object XmlDslParser {
 				val start = ctx.inExpression(idx).start
 				val stop = ctx.inExpression(idx).stop
 				errorHandler.handleException(text,
-					DslTypeException(start, stop, "number", left.getType()))
+					DslTypeException(start, stop, DslValueType.Number, left.getType()))
 				return DslEmpty
 			}
 			val result = when(ctx.comparisonOperator().text) {
@@ -402,7 +402,7 @@ object XmlDslParser {
 			if(right !is DslList) {
 				errorHandler.handleException(ctx.rangeExpression(1).text,
 					DslTypeException(ctx.rangeExpression(1).start, ctx.rangeExpression(1).stop,
-						"list", right.getType()))
+						DslValueType.List, right.getType()))
 				return DslEmpty
 			}
 			return DslBoolean(if(ctx.inOperator().IN() != null) right.value.contains(left)
@@ -422,7 +422,7 @@ object XmlDslParser {
 				val start = ctx.additiveExpression(idx).start
 				val stop = ctx.additiveExpression(idx).stop
 				errorHandler.handleException(text,
-					DslTypeException(start, stop, "number", left.getType()))
+					DslTypeException(start, stop, DslValueType.Number, left.getType()))
 				return DslEmpty
 			}
 			val begin = left.value.toInt()
@@ -492,7 +492,7 @@ object XmlDslParser {
 						errorHandler.handleException(op.ADD().text,
 							DslTypesException(ctx.postfixUnaryExpression().start,
 								ctx.postfixUnaryExpression().stop,
-								listOf("number", "boolean", "string"),
+								setOf(DslValueType.Number, DslValueType.Boolean, DslValueType.String),
 								expr.getType()))
 						return DslEmpty
 					}
@@ -505,7 +505,7 @@ object XmlDslParser {
 						errorHandler.handleException(op.ADD().text,
 							DslTypesException(ctx.postfixUnaryExpression().start,
 								ctx.postfixUnaryExpression().stop,
-								listOf("number", "boolean", "string"),
+								setOf(DslValueType.Number, DslValueType.Boolean, DslValueType.String),
 								expr.getType()))
 						return DslEmpty
 					}
@@ -516,7 +516,7 @@ object XmlDslParser {
 						errorHandler.handleException(op.EXCL().text,
 							DslTypeException(ctx.postfixUnaryExpression().start,
 								ctx.postfixUnaryExpression().stop,
-								"boolean", expr.getType()))
+								DslValueType.Boolean, expr.getType()))
 						return DslEmpty
 					}
 				}
@@ -535,7 +535,7 @@ object XmlDslParser {
 					errorHandler.handleException(
 						ctx.postfixUnaryOperation().text,
 						DslTypeException(ctx.start, ctx.stop,
-							"list", atomic.getType()))
+							DslValueType.List, atomic.getType()))
 					return DslEmpty
 				}
 				val expr = l.expression()

@@ -5,7 +5,7 @@ import java.io.OutputStream
 
 sealed class DslValue {
 
-	abstract fun getType(): String
+	abstract fun getType(): DslValueType
 
 	abstract fun toString(name: String, option: ProcessOption): String?
 
@@ -31,7 +31,7 @@ sealed class DslValue {
 }
 
 class DslNumber(val value: Double) : DslValue() {
-	override fun getType(): String = "number"
+	override fun getType() = DslValueType.Number
 	override fun toString(name: String, option: ProcessOption): String = value.toString().removeSuffix(".0")
 	override fun equals(other: Any?): Boolean {
 		if(this === other) return true
@@ -44,7 +44,7 @@ class DslNumber(val value: Double) : DslValue() {
 }
 
 class DslString(val value: String) : DslValue() {
-	override fun getType(): String = "string"
+	override fun getType() = DslValueType.String
 	override fun toString(name: String, option: ProcessOption): String = value
 	override fun equals(other: Any?): Boolean {
 		if(this === other) return true
@@ -57,7 +57,7 @@ class DslString(val value: String) : DslValue() {
 }
 
 class DslBoolean(val value: Boolean) : DslValue() {
-	override fun getType(): String = "boolean"
+	override fun getType() = DslValueType.Boolean
 	override fun toString(name: String, option: ProcessOption): String = value.toString()
 	override fun equals(other: Any?): Boolean {
 		if(this === other) return true
@@ -70,7 +70,7 @@ class DslBoolean(val value: Boolean) : DslValue() {
 }
 
 class DslList(val value: List<DslValue>) : DslValue() {
-	override fun getType(): String = "list"
+	override fun getType() = DslValueType.List
 	override fun toString(name: String, option: ProcessOption): String = option.onListToString(name, value)
 	override fun equals(other: Any?): Boolean {
 		if(this === other) return true
@@ -83,7 +83,7 @@ class DslList(val value: List<DslValue>) : DslValue() {
 }
 
 object DslEmpty : DslValue() {
-	override fun getType(): String = "empty"
+	override fun getType() = DslValueType.Empty
 	override fun toString(name: String, option: ProcessOption): String = ""
 	override fun equals(other: Any?): Boolean {
 		return other is DslEmpty
@@ -92,7 +92,7 @@ object DslEmpty : DslValue() {
 }
 
 object DslNull : DslValue() {
-	override fun getType(): String = "null"
+	override fun getType() = DslValueType.Null
 	override fun toString(name: String, option: ProcessOption): String? = null
 	override fun equals(other: Any?): Boolean {
 		return other is DslNull
@@ -142,7 +142,7 @@ class DslElement(private val name: String, val scope: DslScope) : DslValue() {
 		outputStream.write(getEndTag().toByteArray(option.charset))
 	}
 
-	override fun getType(): String = "element"
+	override fun getType() = DslValueType.Element
 
 	// element serialize will not contain its content, so use hashcode as its id
 	override fun toString(name: String, option: ProcessOption): String =
