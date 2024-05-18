@@ -3,7 +3,15 @@ package net.littlexfish.xmldslparser.server
 import org.antlr.v4.runtime.Token
 
 abstract class DslParseException(val beginSymbol: Token?, val endSymbol: Token?, message: String):
-	RuntimeException("At [${beginSymbol?.line}:${beginSymbol?.charPositionInLine}]: $message")
+	RuntimeException("At ${getSymbolBegin(beginSymbol)} to ${getSymbolEnd(endSymbol)}, $message")
+
+private fun getSymbolBegin(symbol: Token?): String {
+	return "[${symbol?.line}:${symbol?.charPositionInLine?.plus(1)}]"
+}
+
+private fun getSymbolEnd(symbol: Token?): String {
+	return "[${symbol?.line}:${symbol?.charPositionInLine?.plus(2 + symbol.stopIndex - symbol.startIndex)}]"
+}
 
 class DslValueOperationException(symbol: Token?, val operation: String, val left: DslValue, val right: DslValue) :
 	DslParseException(symbol, symbol, "Cannot \"$operation\" ${right.getType()} to ${left.getType()}")
