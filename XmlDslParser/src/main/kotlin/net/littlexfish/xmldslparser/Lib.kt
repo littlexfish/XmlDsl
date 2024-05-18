@@ -38,7 +38,9 @@ fun parse(source: DslSource,
 	val lexer = XmlDslLexer(source.toCharStream())
 	val parser = AntlrXmlDslParser(CommonTokenStream(lexer))
 	val dsl = XmlDslParser.parseDslFile(parser.dslFile(), processOption, errorHandler, env)
-	dsl.toXml(option, outputStream)
+	if(errorHandler.getDetails().isEmpty()) {
+		dsl.toXml(option, outputStream)
+	}
 }
 
 fun tokens(source: DslSource): List<Token> {
