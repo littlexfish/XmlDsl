@@ -1,0 +1,27 @@
+xml {
+    elem {
+        attr attribute = "value"
+    }
+    val l = ["value", "of", "list", "contains", 6 , "elements"]
+    values {
+        for i in l {
+            value {
+                "Value: "
+                i
+            }
+        }
+    }
+    val rangeList = 0..10
+    values {
+        for i in rangeList {
+            v {
+                "value: ${i + 1}"
+            }
+        }
+    }
+    val ele = elem {
+        "value"
+    }
+    ele
+    ele
+}

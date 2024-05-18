@@ -1,0 +1,21 @@
+html {
+    attr lang = "en"
+    head {
+        meta {
+            attr charset = "UTF-8"
+        }
+        title {
+            "Hello, World!"
+        }
+    }
+    body {
+        h1 {
+            attr id = "title"
+            "Hello, World!"
+        }
+        p {
+            attr class = ["content", 2, true]
+            "This is a simple HTML document."
+        }
+    }
+}

@@ -1,0 +1,11 @@
+
+val dup = "duplicate value"
+
+xml {
+    dup-10-times {
+        for i in 0..10 {
+            dup
+        }
+    }
+}
+

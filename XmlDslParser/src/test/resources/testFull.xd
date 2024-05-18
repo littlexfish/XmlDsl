@@ -1,0 +1,114 @@
+xml {
+    var c = 1
+    val r = true
+    attr a = empty
+    a = null
+    null
+    c += 1
+    c -= 1
+    c *= 1
+    c /= 1
+    c %= 1
+    inner {
+        if (r) {
+            attr b = c
+        }
+        if !r {
+
+        }
+        for i in 0..2 {
+            inner {
+                attr c = i
+            }
+            if i == 1 {
+                break
+            }
+            else {
+                continue
+            }
+        }
+        while true {
+            inner {}
+            break
+        }
+        if false {}
+        else {}
+        for i in 0..1 {}
+        var x = 0
+        while false {}
+        while true {
+            if x > 1 {
+                break
+            }
+            x += 1
+        }
+    }
+    val l = [1, 2, "123", ["inner"]]
+    for i in l {
+        inner {
+            attr it = i
+        }
+    }
+    var ll = [1, 2, 3]
+    ll[0] = 1
+    val ele = e {}
+}
+
+// operation +
+
+1 + 1
+1 + true
+1 + false
+1 + empty
+
+'1' + 1
+'1' + true
+'1' + false
+'1' + '1'
+'1' + empty
+'1' + null
+
+[1] + 1
+[1] + [1]
+[1] + empty
+[1] + null
+
+empty + 1
+
+// operation -
+
+1 - 1
+1 - true
+1 - false
+1 - empty
+
+[1] - 1
+[1] - [1]
+[1] - empty
+[1] - null
+
+empty - 1
+empty - true
+empty - false
+empty - empty
+
+// operation *
+
+1 * 1
+1 * true
+1 * false
+1 * empty
+
+// operation /
+
+1 / 1
+1 / true
+1 / false
+1 / empty
+
+// operation %
+
+1 % 1
+1 % true
+1 % false
+1 % empty

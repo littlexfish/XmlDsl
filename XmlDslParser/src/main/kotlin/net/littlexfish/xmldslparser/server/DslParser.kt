@@ -1,0 +1,775 @@
+package net.littlexfish.xmldslparser.server
+
+import net.littlexfish.xmldslparser.antlr.XmlDslParser.*
+import net.littlexfish.xmldslparser.version
+import org.antlr.v4.runtime.Token
+import java.io.File
+import java.io.OutputStream
+import java.nio.charset.Charset
+
+data class ParseOption(
+	val prettyPrint: Boolean = false,
+	val indent: String = "\t",
+	val shortenEmpty: Boolean = false,
+	val endTagNewLine: Boolean = true,
+	val charset: Charset = Charsets.UTF_8,
+)
+
+data class ProcessOption(
+	val onListToString: (String /* name */, List<DslValue> /* list */) -> String = { _, list ->
+		"[${list.mapNotNull { it.toString("", ProcessOption()) }.joinToString(", ")}]"
+	}
+)
+
+val HtmlProcessOption = ProcessOption(
+	onListToString = onListToString@{ name, list ->
+		return@onListToString when (name) {
+			"class" -> list.mapNotNull { it.toString("", ProcessOption()) }.joinToString(" ")
+			"style" -> list.mapNotNull { it.toString("", ProcessOption()) }.joinToString("; ")
+			else -> "[${list.mapNotNull { it.toString("", ProcessOption()) }.joinToString(", ")}]"
+		}
+	}
+)
+
+class ParseErrorHandler {
+	private val detailList = ArrayList<ParseErrorDetail>()
+	private var listener: (ParseErrorDetail) -> Unit = { it.dslParseException.printStackTrace() }
+
+	fun setListener(listener: (ParseErrorDetail) -> Unit) {
+		this.listener = listener
+	}
+
+	private fun addDetail(detail: ParseErrorDetail) {
+		detailList.add(detail)
+		listener(detail)
+	}
+
+	internal fun handleException(name: String, dslParseException: DslParseException) {
+		addDetail(ParseErrorDetail(name, dslParseException))
+	}
+
+	fun getDetails() = detailList.toList()
+
+}
+
+data class ParseErrorDetail(val text: String, val dslParseException: DslParseException)
+
+
+private fun createGlobalScope(env: Map<String, String?>): DslScope {
+	return DslScope().apply {
+		addGlobalField("VERSION", DslString(version))
+		addGlobalField("JAVA_VERSION", DslString(System.getProperty("java.version")))
+		addGlobalField("OS", DslString(System. getProperty("os.name")))
+		addGlobalField("ARCH", DslString(System.getProperty("os.arch")))
+		addGlobalField("FILE_SEPARATOR", DslString(File.separator))
+		addGlobalField("PATH_SEPARATOR", DslString(File.pathSeparator))
+		addGlobalField("LINE_SEPARATOR", DslString(System.lineSeparator()))
+		addGlobalField("USER_NAME", DslString(System.getProperty("user.name")))
+		addGlobalField("USER_HOME", DslString(System.getProperty("user.home")))
+		addGlobalField("DIR", DslString(System.getProperty("user.dir")))
+		for((key, value) in env) {
+			addGlobalField(key, value?.let { DslString(it) } ?: DslNull)
+		}
+	}
+}
+
+private fun DslScope.addGlobalField(name: String, value: DslValue) {
+	defineField(name, null, DslFieldModifiers(DslFieldModifiers.FieldState.Block))
+	trySetField(name, null, null, null, value)
+}
+
+class XmlDsl(private val processOption: ProcessOption, env: Map<String, String?>) {
+
+	internal val root = DslElement("<root>", DslScope(createGlobalScope(env)))
+	internal val rootScope: DslScope
+		get() = root.scope
+
+	fun toXml(option: ParseOption, outputStream: OutputStream) {
+		for(ele in root.elements) {
+			ele.toXml(option, processOption, outputStream)
+			if(option.prettyPrint) outputStream.write(System.lineSeparator().toByteArray(option.charset))
+		}
+	}
+
+}
+
+object XmlDslParser {
+
+	fun parseDslFile(ctx: DslFileContext, processOption: ProcessOption, errorHandler: ParseErrorHandler, env: Map<String, String?>): XmlDsl {
+		val root = XmlDsl(processOption, env)
+		parseStatements(ctx.statements(), processOption, errorHandler, root.root, root.rootScope)
+		return root
+	}
+
+	private fun parseStatements(ctx: StatementsContext, processOption: ProcessOption, errorHandler: ParseErrorHandler,
+	                            currentElement: DslElement, currentScope: DslScope): JumpType {
+		val stmts = ctx.statement()
+		for(stmt in stmts) {
+			stmt.declaration()?.let {
+				parseDeclaration(it, processOption, errorHandler, currentElement, currentScope)
+			}
+			stmt.assignmentExpression()?.let {
+				parseAssignmentExpression(it, processOption, errorHandler, currentElement, currentScope)
+			}
+			stmt.expression()?.let {
+				val expr = parseExpression(it, processOption, errorHandler, currentElement, currentScope)
+				currentElement.addValue(expr)
+			}
+			stmt.flowExpression()?.let {
+				val jmp = parseFlowExpression(it, processOption, errorHandler, currentElement, currentScope)
+				if(jmp != JumpType.Next) return jmp
+			}
+		}
+		return JumpType.Next
+	}
+
+	private fun parseDeclaration(ctx: DeclarationContext, processOption: ProcessOption, errorHandler: ParseErrorHandler,
+	                             currentElement: DslElement, currentScope: DslScope) {
+		val decl = ctx.propertyDeclaration()
+		val state = decl.dslFieldModifierState()
+		val symbol = decl.identifier().Identifier().symbol
+		try {
+			currentScope.defineField(symbol.text, symbol, DslFieldModifiers(state))
+		}
+		catch(e: DslParseException) {
+			errorHandler.handleException(symbol.text, e)
+		}
+		if(decl.ASSIGNMENT() != null) {
+			val expr = parseExpression(decl.expression(), processOption, errorHandler, currentElement, currentScope)
+			try {
+				currentScope.trySetField(symbol.text, symbol, decl.expression().start, decl.expression().stop, expr)
+			}
+			catch(e: DslParseException) {
+				errorHandler.handleException(symbol.text, e)
+			}
+		}
+	}
+
+	private fun PropertyDeclarationContext.dslFieldModifierState(): DslFieldModifiers.FieldState {
+		return if(VAR() != null) DslFieldModifiers.FieldState.Modify
+		else if(ATTR() != null) DslFieldModifiers.FieldState.Attribute
+		else DslFieldModifiers.FieldState.Block
+	}
+
+	private fun parseAssignmentExpression(ctx: AssignmentExpressionContext, processOption: ProcessOption,
+	                                      errorHandler: ParseErrorHandler, currentElement: DslElement, currentScope: DslScope) {
+		val assignment = ctx.assignmentOperator()
+		val expr = parseExpression(ctx.expression(), processOption, errorHandler, currentElement, currentScope)
+		val symbol = ctx.identifier().Identifier().symbol
+		if(ctx.listAccess() != null) {
+			val left = currentScope.getFieldState(symbol.text, symbol)
+			val dslList = left.value
+			if(dslList !is DslList) {
+				errorHandler.handleException(symbol.text,
+					DslTypeException(symbol, symbol, "list", dslList.getType()))
+				return
+			}
+			val ex = ctx.listAccess().expression()
+			val listIdx = parseExpression(ex, processOption, errorHandler, currentElement, currentScope)
+			if(listIdx !is DslNumber) {
+				errorHandler.handleException(
+					ex.text, DslListAccessException(
+						ex.start, ex.stop, listIdx.getType()))
+				return
+			}
+			val idx = listIdx.value.toInt()
+			val list = dslList.value
+			if(idx < 0 || idx >= list.size) {
+				errorHandler.handleException(
+					ex.text, DslListIndexOutOfBoundsException(
+						ex.start, ex.stop, idx, list.size))
+				return
+			}
+			val mut = list.toMutableList()
+			mut[idx] = expr
+			left.forceModify(DslList(mut))
+		}
+		if(assignment.ASSIGNMENT() != null) {
+			try {
+				currentScope.trySetField(symbol.text, symbol, ctx.expression().start, ctx.expression().stop, expr)
+			}
+			catch(e: DslParseException) {
+				errorHandler.handleException(symbol.text, e)
+			}
+		}
+		else {
+			val originalValue = currentScope.getField(symbol.text, symbol)
+			try {
+				currentScope.trySetField(symbol.text, symbol, ctx.expression().start,
+					ctx.expression().stop, when(assignment.text) {
+						"+=" -> DslOperation.tryDoPlus(originalValue, assignment.ADD_ASSIGNMENT().symbol, expr, processOption)
+						"-=" -> DslOperation.tryDoMinus(originalValue, assignment.SUB_ASSIGNMENT().symbol, expr)
+						"*=" -> DslOperation.tryDoTimes(originalValue, assignment.MULT_ASSIGNMENT().symbol, expr)
+						"/=" -> DslOperation.tryDoDiv(originalValue, assignment.DIV_ASSIGNMENT().symbol, expr)
+						"%=" -> DslOperation.tryDoRem(originalValue, assignment.MOD_ASSIGNMENT().symbol, expr)
+						else -> originalValue
+				})
+			}
+			catch(e: DslParseException) {
+				errorHandler.handleException(symbol.text, e)
+			}
+		}
+	}
+
+	private fun parseFlowExpression(ctx: FlowExpressionContext, processOption: ProcessOption, errorHandler: ParseErrorHandler,
+	                                currentElement: DslElement, currentScope: DslScope): JumpType {
+		ctx.ifExpression()?.let {
+			val expr = parseExpression(it.expression(), processOption, errorHandler, currentElement, currentScope)
+			if(expr !is DslBoolean) {
+				errorHandler.handleException(it.IF().symbol.text,
+					DslIfWhileOperationException(it.IF().symbol, it.expression().start,
+						it.expression().stop, expr.getType()))
+				return JumpType.Next
+			}
+			if(expr.value) {
+				val jmp = parseBlock(it.block(0), processOption, errorHandler, currentElement, currentScope)
+				if(jmp != JumpType.Next) return jmp
+			}
+			else if(it.ELSE() != null) {
+				val jmp = parseBlock(it.block(1), processOption, errorHandler, currentElement, currentScope)
+				if(jmp != JumpType.Next) return jmp
+			}
+			return JumpType.Next
+		}
+		ctx.jumpExpression()?.let {
+			val type = ctx.jumpExpression().jumpType()
+			val symbol = ctx.jumpExpression().BREAK()?.symbol ?: ctx.jumpExpression().CONTINUE().symbol
+			if(!currentScope.canDoJump(type))
+				errorHandler.handleException(type.name.lowercase(), DslNonLoopJumpException(symbol))
+			return type
+		}
+		ctx.loopExpression()?.let {
+			it.forExpression()?.let { f -> parseForExpression(f, processOption, errorHandler, currentElement, currentScope) }
+			it.whileExpression()?.let { w ->
+				var expr = parseExpression(w.expression(), processOption, errorHandler, currentElement, currentScope)
+				while(true) {
+					if(expr !is DslBoolean) {
+						errorHandler.handleException(w.WHILE().symbol.text,
+							DslIfWhileOperationException(w.WHILE().symbol, w.expression().start,
+								w.expression().stop, expr.getType()))
+						break
+					}
+					if(!expr.value) break
+					val subScope = DslScope(currentScope, setOf(JumpType.Next, JumpType.Break, JumpType.Continue))
+					if(parseBlock(w.block(), processOption, errorHandler, currentElement, subScope) == JumpType.Break) break
+					expr = parseExpression(w.expression(), processOption, errorHandler, currentElement, currentScope)
+				}
+			}
+		}
+		return JumpType.Next
+	}
+
+	private fun JumpExpressionContext.jumpType(): JumpType {
+		return if(BREAK() != null) JumpType.Break
+		else JumpType.Continue
+	}
+
+	private fun parseForExpression(ctx: ForExpressionContext, processOption: ProcessOption,
+	                               errorHandler: ParseErrorHandler, currentElement: DslElement,
+	                               currentScope: DslScope) {
+		val expr = parseExpression(ctx.expression(), processOption, errorHandler, currentElement, currentScope)
+		if(expr !is DslList) {
+			errorHandler.handleException(ctx.FOR().symbol.text,
+				DslForOperationException(ctx.FOR().symbol, ctx.expression().start,
+					ctx.expression().stop, expr.getType()))
+			return
+		}
+		val id = ctx.identifier().Identifier().symbol
+		for(dslValue in expr.value) {
+			val subScope = DslScope(currentScope, setOf(JumpType.Next, JumpType.Break, JumpType.Continue))
+			subScope.defineField(id.text, id, DslFieldModifiers(DslFieldModifiers.FieldState.Block))
+			subScope.trySetField(id.text, id, ctx.expression().start, ctx.expression().stop, dslValue)
+			if(parseBlock(ctx.block(), processOption, errorHandler, currentElement, subScope) == JumpType.Break) break
+		}
+	}
+
+	private fun parseElementDeclaration(ctx: ElementDeclarationContext, processOption: ProcessOption,
+	                                    errorHandler: ParseErrorHandler, currentScope: DslScope): DslElement {
+		val name = ctx.identifier().Identifier().symbol.text
+		val subScope = DslScope(currentScope)
+		val element = DslElement(name, subScope)
+		parseBlock(ctx.block(), processOption, errorHandler, element, subScope)
+		return element
+	}
+
+	private fun parseBlock(ctx: BlockContext, processOption: ProcessOption, errorHandler: ParseErrorHandler,
+	                       currentElement: DslElement, subScope: DslScope): JumpType {
+		return parseStatements(ctx.statements(), processOption, errorHandler, currentElement, subScope)
+	}
+
+
+	private fun parseExpression(ctx: ExpressionContext, processOption: ProcessOption, errorHandler: ParseErrorHandler,
+	                            currentElement: DslElement, currentScope: DslScope): DslValue {
+		ctx.disjunction()?.let {
+			return parseDisjunction(it, processOption, errorHandler, currentElement, currentScope)
+		}
+		ctx.elementDeclaration()?.let {
+			return parseElementDeclaration(it, processOption, errorHandler, currentScope)
+		}
+		return DslEmpty
+	}
+
+	private fun parseDisjunction(ctx: DisjunctionContext, processOption: ProcessOption, errorHandler: ParseErrorHandler,
+	                             currentElement: DslElement, currentScope: DslScope): DslValue {
+		var expr = parseConjunction(ctx.conjunction(0), processOption, errorHandler, currentElement, currentScope)
+		if(ctx.DISJ().isNotEmpty() && expr !is DslBoolean) {
+			errorHandler.handleException(ctx.conjunction(0).text,
+				DslTypeException(ctx.conjunction(0).start, ctx.conjunction(0).stop,
+					"boolean", expr.getType()))
+			return DslEmpty
+		}
+		for(i in 0..<ctx.DISJ().size) {
+			val right = parseConjunction(ctx.conjunction(i + 1), processOption, errorHandler, currentElement, currentScope)
+			if(right !is DslBoolean) {
+				errorHandler.handleException(ctx.conjunction(i + 1).text,
+					DslTypeException(ctx.conjunction(i + 1).start, ctx.conjunction(i + 1).stop,
+						"boolean", right.getType()))
+				return DslEmpty
+			}
+			expr = DslBoolean((expr as DslBoolean).value || right.value)
+		}
+		return expr
+	}
+
+	private fun parseConjunction(ctx: ConjunctionContext, processOption: ProcessOption, errorHandler: ParseErrorHandler,
+	                             currentElement: DslElement, currentScope: DslScope): DslValue {
+		var expr = parseEqualityComparison(ctx.equalityComparison(0), processOption, errorHandler, currentElement, currentScope)
+		if(ctx.CONJ().isNotEmpty() && expr !is DslBoolean) {
+			errorHandler.handleException(ctx.equalityComparison(0).text,
+				DslTypeException(ctx.equalityComparison(0).start, ctx.equalityComparison(0).stop,
+					"boolean", expr.getType()))
+			return DslEmpty
+		}
+		for(i in 0..<ctx.CONJ().size) {
+			val right = parseEqualityComparison(ctx.equalityComparison(i + 1), processOption, errorHandler, currentElement, currentScope)
+			if(right !is DslBoolean) {
+				errorHandler.handleException(ctx.equalityComparison(i + 1).text,
+					DslTypeException(ctx.equalityComparison(i + 1).start, ctx.equalityComparison(i + 1).stop,
+						"boolean", right.getType()))
+				return DslEmpty
+			}
+			expr = DslBoolean((expr as DslBoolean).value && right.value)
+		}
+		return expr
+	}
+
+	private fun parseEqualityComparison(ctx: EqualityComparisonContext, processOption: ProcessOption, errorHandler: ParseErrorHandler,
+	                                    currentElement: DslElement, currentScope: DslScope): DslValue {
+		val left = parseComparison(ctx.comparison(0), processOption, errorHandler, currentElement, currentScope)
+		if(ctx.equalityOperation() != null) {
+			val right = parseComparison(ctx.comparison(1), processOption, errorHandler, currentElement, currentScope)
+			val result = when(ctx.equalityOperation().text) {
+				"==" -> left == right
+				"!=" -> left != right
+				else -> false
+			}
+			return DslBoolean(result)
+		}
+		return left
+	}
+
+	private fun parseComparison(ctx: ComparisonContext, processOption: ProcessOption, errorHandler: ParseErrorHandler,
+								currentElement:DslElement, currentScope: DslScope): DslValue {
+		val left = parseInExpression(ctx.inExpression(0), processOption, errorHandler, currentElement, currentScope)
+		if(ctx.comparisonOperator() != null) {
+			val right = parseInExpression(ctx.inExpression(1), processOption, errorHandler, currentElement, currentScope)
+			if(left !is DslNumber || right !is DslNumber) {
+				val idx = if(left !is DslNumber) 0 else 1
+				val text = ctx.inExpression(idx).text
+				val start = ctx.inExpression(idx).start
+				val stop = ctx.inExpression(idx).stop
+				errorHandler.handleException(text,
+					DslTypeException(start, stop, "number", left.getType()))
+				return DslEmpty
+			}
+			val result = when(ctx.comparisonOperator().text) {
+				"<" -> left.value < right.value
+				"<=" -> left.value <= right.value
+				">" -> left.value > right.value
+				">=" -> left.value >= right.value
+				else -> false
+			}
+			return DslBoolean(result)
+		}
+		return left
+	}
+
+	private fun parseInExpression(ctx: InExpressionContext, processOption: ProcessOption, errorHandler: ParseErrorHandler,
+	                              currentElement: DslElement, currentScope: DslScope): DslValue {
+		val left = parseRangeExpression(ctx.rangeExpression(0), processOption, errorHandler, currentElement, currentScope)
+		if(ctx.inOperator() != null) {
+			val right = parseRangeExpression(ctx.rangeExpression(1), processOption, errorHandler, currentElement, currentScope)
+			if(right !is DslList) {
+				errorHandler.handleException(ctx.rangeExpression(1).text,
+					DslTypeException(ctx.rangeExpression(1).start, ctx.rangeExpression(1).stop,
+						"list", right.getType()))
+				return DslEmpty
+			}
+			return DslBoolean(if(ctx.inOperator().IN() != null) right.value.contains(left)
+			else !right.value.contains(left))
+		}
+		return left
+	}
+
+	private fun parseRangeExpression(ctx: RangeExpressionContext, processOption: ProcessOption,
+	                                 errorHandler: ParseErrorHandler, currentElement: DslElement, currentScope: DslScope): DslValue {
+		val left = parseAdditiveExpression(ctx.additiveExpression(0), processOption, errorHandler, currentElement, currentScope)
+		if(ctx.RANGE() != null) {
+			val right = parseAdditiveExpression(ctx.additiveExpression(1), processOption, errorHandler, currentElement, currentScope)
+			if(left !is DslNumber || right !is DslNumber) {
+				val idx = if(left !is DslNumber) 0 else 1
+				val text = ctx.additiveExpression(idx).text
+				val start = ctx.additiveExpression(idx).start
+				val stop = ctx.additiveExpression(idx).stop
+				errorHandler.handleException(text,
+					DslTypeException(start, stop, "number", left.getType()))
+				return DslEmpty
+			}
+			val begin = left.value.toInt()
+			val end = right.value.toInt()
+			val list = (begin..<end).toList().map { DslNumber(it.toDouble()) }
+			return DslList(list)
+		}
+		return left
+	}
+
+	private fun parseAdditiveExpression(ctx: AdditiveExpressionContext, processOption: ProcessOption,
+	                                    errorHandler: ParseErrorHandler, currentElement: DslElement, currentScope: DslScope): DslValue {
+		var expr = parseMultiplicativeExpression(ctx.multiplicativeExpression(0), processOption, errorHandler, currentElement, currentScope)
+		for(i in 0..<ctx.additiveOperator().size) {
+			val right = parseMultiplicativeExpression(ctx.multiplicativeExpression(i + 1), processOption,
+				errorHandler, currentElement, currentScope)
+			val op = ctx.additiveOperator(i)
+			try {
+				expr = when(op.text) {
+					"+" -> DslOperation.tryDoPlus(expr, op.ADD().symbol, right, processOption)
+					"-" -> DslOperation.tryDoMinus(expr, op.SUB().symbol, right)
+					else -> expr
+				}
+			}
+			catch(e: DslParseException) {
+				errorHandler.handleException(op.text, e)
+				return DslEmpty
+			}
+		}
+		return expr
+	}
+
+	private fun parseMultiplicativeExpression(ctx: MultiplicativeExpressionContext, processOption: ProcessOption,
+	                                          errorHandler: ParseErrorHandler, currentElement: DslElement, currentScope: DslScope): DslValue {
+		var expr = parsePrefixUnaryExpression(ctx.prefixUnaryExpression(0), processOption, errorHandler, currentElement, currentScope)
+
+		for(i in 0..<ctx.multiplicativeOperation().size) {
+			val right = parsePrefixUnaryExpression(ctx.prefixUnaryExpression(i + 1), processOption, errorHandler, currentElement, currentScope)
+			val op = ctx.multiplicativeOperation(i)
+			try {
+				expr = when(op.text) {
+					"*" -> DslOperation.tryDoTimes(expr, op.MULT().symbol, right)
+					"/" -> DslOperation.tryDoDiv(expr, op.DIV().symbol, right)
+					"%" -> DslOperation.tryDoRem(expr, op.MOD().symbol, right)
+					else -> expr
+				}
+			}
+			catch(e: DslParseException) {
+				errorHandler.handleException(op.text, e)
+				return DslEmpty
+			}
+		}
+		return expr
+	}
+
+	private fun parsePrefixUnaryExpression(ctx: PrefixUnaryExpressionContext, processOption: ProcessOption,
+	                                       errorHandler: ParseErrorHandler, currentElement: DslElement, currentScope: DslScope): DslValue {
+		var expr = parsePostfixUnaryExpression(ctx.postfixUnaryExpression(), processOption, errorHandler, currentElement, currentScope)
+		val ops = ctx.prefixUnaryOperation()
+		for(op in ops) {
+			expr = when(op.text) {
+				"+" -> when(expr) {
+					is DslNumber -> expr
+					is DslBoolean -> DslNumber(if(expr.value) 1.0 else 0.0)
+					is DslString -> DslNumber(expr.value.toDouble())
+					else -> {
+						errorHandler.handleException(op.ADD().text,
+							DslTypesException(ctx.postfixUnaryExpression().start,
+								ctx.postfixUnaryExpression().stop,
+								listOf("number", "boolean", "string"),
+								expr.getType()))
+						return DslEmpty
+					}
+				}
+				"-" -> when(expr) {
+					is DslNumber -> DslNumber(-expr.value)
+					is DslBoolean -> DslNumber(if(expr.value) -1.0 else -0.0)
+					is DslString -> DslNumber(-expr.value.toDouble())
+					else -> {
+						errorHandler.handleException(op.ADD().text,
+							DslTypesException(ctx.postfixUnaryExpression().start,
+								ctx.postfixUnaryExpression().stop,
+								listOf("number", "boolean", "string"),
+								expr.getType()))
+						return DslEmpty
+					}
+				}
+				"!" -> when(expr) {
+					is DslBoolean -> DslBoolean(!expr.value)
+					else -> {
+						errorHandler.handleException(op.EXCL().text,
+							DslTypeException(ctx.postfixUnaryExpression().start,
+								ctx.postfixUnaryExpression().stop,
+								"boolean", expr.getType()))
+						return DslEmpty
+					}
+				}
+				else -> expr
+			}
+		}
+		return expr
+	}
+
+	private fun parsePostfixUnaryExpression(ctx: PostfixUnaryExpressionContext, processOption: ProcessOption,
+	                                        errorHandler: ParseErrorHandler, currentElement: DslElement, currentScope: DslScope): DslValue {
+		val atomic = parseAtomicExpression(ctx.atomicExpression(), processOption, errorHandler, currentElement, currentScope)
+		ctx.postfixUnaryOperation()?.let {
+			it.listAccess()?.let { l ->
+				if(atomic !is DslList) {
+					errorHandler.handleException(
+						ctx.postfixUnaryOperation().text,
+						DslTypeException(ctx.start, ctx.stop,
+							"list", atomic.getType()))
+					return DslEmpty
+				}
+				val expr = l.expression()
+				val listIdx = parseExpression(expr, processOption, errorHandler, currentElement, currentScope)
+				if(listIdx !is DslNumber) {
+					errorHandler.handleException(
+						expr.text,
+						DslListAccessException(
+							expr.start, expr.stop,
+							listIdx.getType()))
+					return DslEmpty
+				}
+				val idx = listIdx.value.toInt()
+				val list = atomic.value
+				if(idx < 0 || idx >= list.size) {
+					errorHandler.handleException(expr.text,
+						DslListIndexOutOfBoundsException(
+							expr.start, expr.stop,
+							idx, list.size))
+					return DslEmpty
+				}
+				return list[idx]
+			}
+		}
+		return atomic
+	}
+
+	private fun parseAtomicExpression(ctx: AtomicExpressionContext, processOption: ProcessOption,
+	                                  errorHandler: ParseErrorHandler, currentElement: DslElement, currentScope: DslScope): DslValue {
+		ctx.parenthesizedExpression()?.let {
+			return parseParenthesizedExpression(it, processOption, errorHandler, currentElement, currentScope)
+		}
+		ctx.literalConstant()?.let {
+			return parseLiteralConstant(it, processOption, errorHandler, currentElement, currentScope)
+		}
+		ctx.collectionLiteral()?.let {
+			return parseCollectionLiteral(it, processOption, errorHandler, currentElement, currentScope)
+		}
+		ctx.identifier().let {
+			val symbol = it.Identifier().symbol
+			try {
+				return currentScope.getField(symbol.text, symbol)
+			}
+			catch(e: DslParseException) {
+				errorHandler.handleException(symbol.text, e)
+			}
+		}
+		return DslEmpty
+	}
+
+	private fun parseParenthesizedExpression(ctx: ParenthesizedExpressionContext, processOption: ProcessOption,
+	                                         errorHandler: ParseErrorHandler, currentElement: DslElement, currentScope: DslScope): DslValue {
+		return parseExpression(ctx.expression(), processOption, errorHandler, currentElement, currentScope)
+	}
+
+	private fun parseLiteralConstant(ctx: LiteralConstantContext, processOption: ProcessOption,
+	                                 errorHandler: ParseErrorHandler, currentElement: DslElement, currentScope: DslScope): DslValue {
+		ctx.BooleanLiteral()?.let {
+			return DslBoolean(it.text.toBoolean())
+		}
+		ctx.NumberLiteral()?.let {
+			val neg = it.text.startsWith("-")
+			val text = it.text.replace("_", "")
+			val numStr = if(neg) text.substring(1) else text
+			val d = if(numStr.startsWith("0b", ignoreCase = true))
+				numStr.substring(2).toInt(2).toDouble()
+			else if(numStr.startsWith("0o", ignoreCase = true))
+				numStr.substring(2).toInt(8).toDouble()
+			else if(numStr.startsWith("0x", ignoreCase = true))
+				numStr.substring(2).toInt(16).toDouble()
+			else
+				numStr.toDouble()
+			return DslNumber(d)
+		}
+		ctx.stringLiteral()?.let {
+			return parseStringLiteral(it, processOption, errorHandler, currentElement, currentScope)
+		}
+		ctx.NullLiteral()?.let {
+			return DslNull
+		}
+		ctx.EMPTY()?.let {
+			return DslEmpty
+		}
+		return DslEmpty
+	}
+
+	private fun parseStringLiteral(ctx: StringLiteralContext, processOption: ProcessOption,
+	                               errorHandler: ParseErrorHandler, currentElement: DslElement, currentScope: DslScope): DslValue {
+		val sb = StringBuilder()
+		ctx.stringContent().forEach {
+			sb.append(parseStringContent(it, processOption, errorHandler, currentElement, currentScope))
+		}
+		var ret = sb.toString().trim()
+		val lines = ret.lines()
+		ret = lines.joinToString("<br>") { it.trim() }
+		return DslString(ret)
+	}
+
+	private fun parseStringContent(ctx: StringContentContext, processOption: ProcessOption,
+	                               errorHandler: ParseErrorHandler, currentElement: DslElement, currentScope: DslScope): String {
+		ctx.StrText()?.let {
+			return it.text
+		}
+		ctx.StrEscapedChar()?.let {
+			val text = it.text
+			if(text.startsWith("\\u")) {
+				val code = text.substring(2).toInt(16)
+				return code.toChar().toString()
+			}
+			else {
+				return when(text[1]) {
+					't' -> "\t"
+					'b' -> "\b"
+					'r' -> "\r"
+					'n' -> "\n"
+					'\'' -> "\'"
+					'\"' -> "\""
+					'\\' -> "\\"
+					'$' -> "$"
+					else -> text
+				}
+			}
+		}
+		ctx.StrRef()?.let {
+			val symbol = it.symbol
+			val field = currentScope.getField(symbol.text, symbol)
+			return field.toString(symbol.text, processOption) ?: "null"
+		}
+		ctx.stringExpression()?.let {
+			val expr = parseStringExpression(it, processOption, errorHandler, currentElement, currentScope)
+			return expr.toString("", processOption) ?: "null"
+		}
+		return ""
+	}
+
+	private fun parseStringExpression(ctx: StringExpressionContext, processOption: ProcessOption,
+	                                  errorHandler: ParseErrorHandler, currentElement: DslElement, currentScope: DslScope): DslValue {
+		return parseExpression(ctx.expression(), processOption, errorHandler, currentElement, currentScope)
+	}
+
+	private fun parseCollectionLiteral(ctx: CollectionLiteralContext, processOption: ProcessOption,
+	                                   errorHandler: ParseErrorHandler, currentElement: DslElement, currentScope: DslScope): DslValue {
+		val list = ArrayList<DslValue>()
+		ctx.expression().forEach {
+			list.add(parseExpression(it, processOption, errorHandler, currentElement, currentScope))
+		}
+		return DslList(list)
+	}
+
+}
+
+private object DslOperation {
+
+	fun tryDoPlus(left: DslValue, operationSymbol: Token, right: DslValue, processOption: ProcessOption): DslValue {
+		return when(left) {
+			is DslNumber -> when(right) {
+				is DslNumber -> DslNumber(left.value + right.value)
+				is DslBoolean -> DslNumber(left.value + if(right.value) 1.0 else 0.0)
+				is DslEmpty -> left
+				else -> throw DslValueOperationException(operationSymbol, "+", left, right)
+			}
+			is DslString -> when(right) {
+				is DslList, is DslElement -> throw DslValueOperationException(operationSymbol, "+", left, right)
+				is DslNull, is DslEmpty -> left
+				else -> DslString(left.value + right.toString("", processOption))
+			}
+			is DslList -> when(right) {
+				is DslNull, is DslEmpty -> left
+				is DslList -> DslList(left.value + right.value)
+				else -> DslList(left.value + right)
+			}
+			is DslEmpty -> right
+			else -> throw DslValueOperationException(operationSymbol, "+", left, right)
+		}
+	}
+
+	fun tryDoMinus(left: DslValue, operationSymbol: Token, right: DslValue): DslValue {
+		return when(left) {
+			is DslNumber -> when(right) {
+				is DslNumber -> DslNumber(left.value - right.value)
+				is DslBoolean -> DslNumber(left.value - if(right.value) 1.0 else 0.0)
+				is DslEmpty -> left
+				else -> throw DslValueOperationException(operationSymbol, "-", left, right)
+			}
+			is DslList -> when(right) {
+				is DslList -> DslList(left.value - right.value.toSet())
+				is DslEmpty, is DslNull -> left
+				else -> DslList(left.value - right)
+			}
+			is DslEmpty -> when(right) {
+				is DslNumber -> DslNumber(-right.value)
+				is DslBoolean -> DslNumber(if (right.value) -1.0 else -0.0)
+				is DslEmpty -> left
+				else -> throw DslValueOperationException(operationSymbol, "-", left, right)
+			}
+			else -> throw DslValueOperationException(operationSymbol, "-", left, right)
+		}
+	}
+
+	fun tryDoTimes(left: DslValue, operationSymbol: Token, right: DslValue): DslValue {
+		return when(left) {
+			is DslNumber -> when(right) {
+				is DslNumber -> DslNumber(left.value * right.value)
+				is DslBoolean -> DslNumber(left.value * if(right.value) 1.0 else 0.0)
+				is DslEmpty -> left
+				else -> throw DslValueOperationException(operationSymbol, "*", left, right)
+			}
+			else -> throw DslValueOperationException(operationSymbol, "*", left, right)
+		}
+	}
+
+	fun tryDoDiv(left: DslValue, operationSymbol: Token, right: DslValue): DslValue {
+		return when(left) {
+			is DslNumber -> when(right) {
+				is DslNumber -> DslNumber(left.value / right.value)
+				is DslBoolean -> DslNumber(left.value / if(right.value) 1.0 else 0.0)
+				is DslEmpty -> left
+				else -> throw DslValueOperationException(operationSymbol, "/", left, right)
+			}
+			else -> throw DslValueOperationException(operationSymbol, "/", left, right)
+		}
+	}
+
+	fun tryDoRem(left: DslValue, operationSymbol: Token, right: DslValue): DslValue {
+		return when(left) {
+			is DslNumber -> when(right) {
+				is DslNumber -> DslNumber(left.value % right.value)
+				is DslBoolean -> DslNumber(left.value % if(right.value) 1.0 else 0.0)
+				is DslEmpty -> left
+				else -> throw DslValueOperationException(operationSymbol, "%", left, right)
+			}
+			else -> throw DslValueOperationException(operationSymbol, "%", left, right)
+		}
+	}
+
+}
+

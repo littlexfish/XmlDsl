@@ -1,0 +1,65 @@
+// operation
+
+1 + [1]
+'1' + [1]
+null + 1
+1 - [1]
+empty - '2'
+null - 1
+1 * '1'
+null * 1
+1 / '1'
+null / 1
+1 % '1'
+null % 1
+
+// field not found
+
+i
+
+// field already exists
+
+val i = 1
+val i = 2
+
+// field cannot modify
+
+val j = 0
+j = 1
+
+// field not initialized
+
+val i
+i
+
+// if while operation
+
+while 1 {}
+if 2 {}
+
+// for operation
+
+for i in 1 {}
+
+// non loop jump
+break
+
+// list access
+
+[1, 2, 3][true]
+
+// list index
+
+[1, 2, 3][3]
+
+// type error
+
+true || 1
+var l = true
+l[0]
+l[0] = 1
+
+// types error
+
++null
+
