@@ -306,7 +306,7 @@ object XmlDslParser {
 		ctx.elementDeclaration()?.let {
 			return parseElementDeclaration(it, processOption, errorHandler, currentScope)
 		}
-		return DslEmpty
+		return DslNull // here should not be reached
 	}
 
 	private fun parseDisjunction(ctx: DisjunctionContext, processOption: ProcessOption, errorHandler: ParseErrorHandler,
@@ -316,7 +316,7 @@ object XmlDslParser {
 			errorHandler.handleException(ctx.conjunction(0).text,
 				DslTypeException(ctx.conjunction(0).start, ctx.conjunction(0).stop,
 					DslValueType.Boolean, expr.getType()))
-			return DslEmpty
+			return DslNull
 		}
 		for(i in 0..<ctx.DISJ().size) {
 			val right = parseConjunction(ctx.conjunction(i + 1), processOption, errorHandler, currentElement, currentScope)
@@ -324,7 +324,7 @@ object XmlDslParser {
 				errorHandler.handleException(ctx.conjunction(i + 1).text,
 					DslTypeException(ctx.conjunction(i + 1).start, ctx.conjunction(i + 1).stop,
 						DslValueType.Boolean, right.getType()))
-				return DslEmpty
+				return DslNull
 			}
 			expr = DslBoolean((expr as DslBoolean).value || right.value)
 		}
@@ -338,7 +338,7 @@ object XmlDslParser {
 			errorHandler.handleException(ctx.equalityComparison(0).text,
 				DslTypeException(ctx.equalityComparison(0).start, ctx.equalityComparison(0).stop,
 					DslValueType.Boolean, expr.getType()))
-			return DslEmpty
+			return DslNull
 		}
 		for(i in 0..<ctx.CONJ().size) {
 			val right = parseEqualityComparison(ctx.equalityComparison(i + 1), processOption, errorHandler, currentElement, currentScope)
@@ -346,7 +346,7 @@ object XmlDslParser {
 				errorHandler.handleException(ctx.equalityComparison(i + 1).text,
 					DslTypeException(ctx.equalityComparison(i + 1).start, ctx.equalityComparison(i + 1).stop,
 						DslValueType.Boolean, right.getType()))
-				return DslEmpty
+				return DslNull
 			}
 			expr = DslBoolean((expr as DslBoolean).value && right.value)
 		}
@@ -380,7 +380,7 @@ object XmlDslParser {
 				val stop = ctx.inExpression(idx).stop
 				errorHandler.handleException(text,
 					DslTypeException(start, stop, DslValueType.Number, left.getType()))
-				return DslEmpty
+				return DslNull
 			}
 			val result = when(ctx.comparisonOperator().text) {
 				"<" -> left.value < right.value
@@ -403,7 +403,7 @@ object XmlDslParser {
 				errorHandler.handleException(ctx.rangeExpression(1).text,
 					DslTypeException(ctx.rangeExpression(1).start, ctx.rangeExpression(1).stop,
 						DslValueType.List, right.getType()))
-				return DslEmpty
+				return DslNull
 			}
 			return DslBoolean(if(ctx.inOperator().IN() != null) right.value.contains(left)
 			else !right.value.contains(left))
@@ -423,7 +423,7 @@ object XmlDslParser {
 				val stop = ctx.additiveExpression(idx).stop
 				errorHandler.handleException(text,
 					DslTypeException(start, stop, DslValueType.Number, left.getType()))
-				return DslEmpty
+				return DslNull
 			}
 			val begin = left.value.toInt()
 			val end = right.value.toInt()
@@ -449,7 +449,7 @@ object XmlDslParser {
 			}
 			catch(e: DslParseException) {
 				errorHandler.handleException(op.text, e)
-				return DslEmpty
+				return DslNull
 			}
 		}
 		return expr
@@ -472,7 +472,7 @@ object XmlDslParser {
 			}
 			catch(e: DslParseException) {
 				errorHandler.handleException(op.text, e)
-				return DslEmpty
+				return DslNull
 			}
 		}
 		return expr
@@ -494,7 +494,7 @@ object XmlDslParser {
 								ctx.postfixUnaryExpression().stop,
 								setOf(DslValueType.Number, DslValueType.Boolean, DslValueType.String),
 								expr.getType()))
-						return DslEmpty
+						return DslNull
 					}
 				}
 				"-" -> when(expr) {
@@ -507,7 +507,7 @@ object XmlDslParser {
 								ctx.postfixUnaryExpression().stop,
 								setOf(DslValueType.Number, DslValueType.Boolean, DslValueType.String),
 								expr.getType()))
-						return DslEmpty
+						return DslNull
 					}
 				}
 				"!" -> when(expr) {
@@ -517,7 +517,7 @@ object XmlDslParser {
 							DslTypeException(ctx.postfixUnaryExpression().start,
 								ctx.postfixUnaryExpression().stop,
 								DslValueType.Boolean, expr.getType()))
-						return DslEmpty
+						return DslNull
 					}
 				}
 				else -> expr
@@ -536,7 +536,7 @@ object XmlDslParser {
 						ctx.postfixUnaryOperation().text,
 						DslTypeException(ctx.start, ctx.stop,
 							DslValueType.List, atomic.getType()))
-					return DslEmpty
+					return DslNull
 				}
 				val expr = l.expression()
 				val listIdx = parseExpression(expr, processOption, errorHandler, currentElement, currentScope)
@@ -546,7 +546,7 @@ object XmlDslParser {
 						DslListAccessException(
 							expr.start, expr.stop,
 							listIdx.getType()))
-					return DslEmpty
+					return DslNull
 				}
 				val idx = listIdx.value.toInt()
 				val list = atomic.value
@@ -555,7 +555,7 @@ object XmlDslParser {
 						DslListIndexOutOfBoundsException(
 							expr.start, expr.stop,
 							idx, list.size))
-					return DslEmpty
+					return DslNull
 				}
 				return list[idx]
 			}
@@ -583,7 +583,7 @@ object XmlDslParser {
 				errorHandler.handleException(symbol.text, e)
 			}
 		}
-		return DslEmpty
+		return DslNull // here should not be reached
 	}
 
 	private fun parseParenthesizedExpression(ctx: ParenthesizedExpressionContext, processOption: ProcessOption,
@@ -619,7 +619,7 @@ object XmlDslParser {
 		ctx.EMPTY()?.let {
 			return DslEmpty
 		}
-		return DslEmpty
+		return DslNull // here should not be reached
 	}
 
 	private fun parseStringLiteral(ctx: StringLiteralContext, processOption: ProcessOption,
@@ -668,7 +668,7 @@ object XmlDslParser {
 			val expr = parseStringExpression(it, processOption, errorHandler, currentElement, currentScope)
 			return expr.toString("", processOption) ?: "null"
 		}
-		return ""
+		return "" // here should not be reached
 	}
 
 	private fun parseStringExpression(ctx: StringExpressionContext, processOption: ProcessOption,

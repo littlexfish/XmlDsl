@@ -27,7 +27,6 @@ Design details will create as feature issues.
 - [ ] add function type
 - [ ] add function call
 - [ ] add type process
-- [ ] ensure if error occurs, will return null instead empty
 - [ ] code highlighter
 
 ## Well-known Issues
