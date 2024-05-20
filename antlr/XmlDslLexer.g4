@@ -71,7 +71,6 @@ FUN         : 'fun';
 RETURN      : 'return';
 EXPORT      : 'export';
 // Type
-TYPEOF      : 'typeof';
 AS          : 'as';
 AS_SAFE     : 'as?';
 IS          : 'is';
@@ -83,6 +82,10 @@ STRING      : 'string';
 BOOLEAN     : 'boolean';
 LIST        : 'list';
 ELEMENT     : 'element';
+FUNCTION    : 'function';
+TYPE        : 'type';
+SET         : 'set';
+DICT        : 'dict';
 
 // LITERALS
 NumberLiteral: '-'? (Int | Hex | Bin | Oct | Real);
@@ -196,7 +199,6 @@ Inside_FUN         : FUN -> type(FUN);
 Inside_RETURN      : RETURN -> type(RETURN);
 Inside_EXPORT      : EXPORT -> type(EXPORT);
 // Type
-Inside_TYPEOF      : TYPEOF -> type(TYPEOF);
 Inside_AS          : AS -> type(AS);
 Inside_AS_SAFE     : AS_SAFE -> type(AS_SAFE);
 Inside_IS          : IS -> type(IS);
@@ -208,6 +210,10 @@ Inside_STRING      : STRING -> type(STRING);
 Inside_BOOLEAN     : BOOLEAN -> type(BOOLEAN);
 Inside_LIST        : LIST -> type(LIST);
 Inside_ELEMENT     : ELEMENT -> type(ELEMENT);
+Inside_FUNCTION    : FUNCTION -> type(FUNCTION);
+Inside_TYPE        : TYPE -> type(TYPE);
+Inside_SET         : SET -> type(SET);
+Inside_DICT        : DICT -> type(DICT);
 
 mode DoubleQuoteStrig;
 
