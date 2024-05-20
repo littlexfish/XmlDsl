@@ -33,4 +33,5 @@ class DslTypeException(beginSymbol: Token, endSymbol: Token, val expectType: Dsl
 	DslParseException(beginSymbol, endSymbol, "Expect type $expectType, but got $gotType")
 class DslTypesException(beginSymbol: Token, endSymbol: Token, val expectTypes: Set<DslValueType>, val gotType: DslValueType) :
 	DslParseException(beginSymbol, endSymbol, "Expect types [${expectTypes.joinToString(", ")}], but got $gotType")
-
+class DslParamNotMatchException(beginSymbol: Token, endSymbol: Token, val expectCount: Int, val gotCount: Int) :
+	DslParseException(beginSymbol, endSymbol, "Expect $expectCount parameters, but got $gotCount")

@@ -2,11 +2,14 @@ package net.littlexfish.xmldslparser.server
 
 import org.antlr.v4.runtime.Token
 
-enum class JumpType {
-	Next, Break, Continue
+sealed class JumpType(val name: String) {
+	data object Next : JumpType("Next")
+	data object Break : JumpType("Break")
+	data object Continue : JumpType("Continue")
+	data class Return(val value: DslValue?) : JumpType("Return")
 }
 
-class DslScope(private val parent: DslScope? = null, private val acceptJumpType: Set<JumpType> = setOf(JumpType.Next)) {
+class DslScope(private val parent: DslScope? = null, private val acceptJumpType: Set<Class<out JumpType>> = setOf(JumpType.Next::class.java)) {
 
 	private val fields = HashMap<String, DslValueState>()
 
@@ -38,6 +41,6 @@ class DslScope(private val parent: DslScope? = null, private val acceptJumpType:
 
 	internal fun getFieldStates() = fields.values
 
-	fun canDoJump(type: JumpType) = acceptJumpType.contains(type)
+	fun canDoJump(type: Class<out JumpType>) = acceptJumpType.contains(type)
 
 }

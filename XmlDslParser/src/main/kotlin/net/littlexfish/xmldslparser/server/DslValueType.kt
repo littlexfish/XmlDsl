@@ -4,5 +4,5 @@ enum class DslValueType {
 	Number, String, Boolean,
 	List, Empty, Null,
 	Element, Function, Type,
-	Set, Dict, Any
+	Set, Dict, Pair, Any
 }

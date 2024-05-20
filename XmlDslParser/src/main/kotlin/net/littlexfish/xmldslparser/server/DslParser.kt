@@ -18,6 +18,13 @@ data class ParseOption(
 data class ProcessOption(
 	val onListToString: (String /* name */, List<DslValue> /* list */) -> String = { _, list ->
 		"[${list.mapNotNull { it.toString("", ProcessOption()) }.joinToString(", ")}]"
+	},
+	val onDictToString: (String /* name */, Map<DslValue, DslValue> /* dict */) -> String = { _, dict ->
+		"{${dict.map { (k, v) -> "${k.toString("", ProcessOption())}: ${v.toString("", ProcessOption())}" }.joinToString(", ")}}"
+	},
+	val onSetToString: (String /* name */, Set<DslValue> /* set */) -> String = { _, set ->
+		val list = onListToString("", set.toList())
+		"<${list.substring(1..<list.length)}>"
 	}
 )
 
@@ -234,7 +241,7 @@ object XmlDslParser {
 		ctx.jumpExpression()?.let {
 			val type = ctx.jumpExpression().jumpType()
 			val symbol = ctx.jumpExpression().BREAK()?.symbol ?: ctx.jumpExpression().CONTINUE().symbol
-			if(!currentScope.canDoJump(type))
+			if(!currentScope.canDoJump(type::class.java))
 				errorHandler.handleException(type.name.lowercase(), DslNonLoopJumpException(symbol))
 			return type
 		}
@@ -250,7 +257,8 @@ object XmlDslParser {
 						break
 					}
 					if(!expr.value) break
-					val subScope = DslScope(currentScope, setOf(JumpType.Next, JumpType.Break, JumpType.Continue))
+					val subScope = DslScope(currentScope, setOf(JumpType.Next::class.java,
+						JumpType.Break::class.java, JumpType.Continue::class.java))
 					if(parseBlock(w.block(), processOption, errorHandler, currentElement, subScope) == JumpType.Break) break
 					expr = parseExpression(w.expression(), processOption, errorHandler, currentElement, currentScope)
 				}
@@ -276,7 +284,8 @@ object XmlDslParser {
 		}
 		val id = ctx.identifier().Identifier().symbol
 		for(dslValue in expr.value) {
-			val subScope = DslScope(currentScope, setOf(JumpType.Next, JumpType.Break, JumpType.Continue))
+			val subScope = DslScope(currentScope, setOf(JumpType.Next::class.java,
+				JumpType.Break::class.java, JumpType.Continue::class.java))
 			subScope.defineField(id.text, id, DslFieldModifiers(DslFieldModifiers.FieldState.Block))
 			subScope.trySetField(id.text, id, ctx.expression().start, ctx.expression().stop, dslValue)
 			if(parseBlock(ctx.block(), processOption, errorHandler, currentElement, subScope) == JumpType.Break) break
@@ -292,7 +301,7 @@ object XmlDslParser {
 		return element
 	}
 
-	private fun parseBlock(ctx: BlockContext, processOption: ProcessOption, errorHandler: ParseErrorHandler,
+	internal fun parseBlock(ctx: BlockContext, processOption: ProcessOption, errorHandler: ParseErrorHandler,
 	                       currentElement: DslElement, subScope: DslScope): JumpType {
 		return parseStatements(ctx.statements(), processOption, errorHandler, currentElement, subScope)
 	}

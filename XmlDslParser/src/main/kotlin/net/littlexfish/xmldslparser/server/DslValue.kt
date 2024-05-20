@@ -1,5 +1,6 @@
 package net.littlexfish.xmldslparser.server
 
+import net.littlexfish.xmldslparser.antlr.XmlDslParser.BlockContext
 import org.antlr.v4.runtime.Token
 import java.io.OutputStream
 
@@ -159,6 +160,98 @@ class DslElement(private val name: String, val scope: DslScope) : DslValue() {
 		return result
 	}
 
+}
+
+class DslFunction(private val paramNames: List<String>, private val block: BlockContext) : DslValue() {
+	override fun getType() = DslValueType.Function
+	override fun toString(name: String, option: ProcessOption): String = "<element#${hashCode().toUInt().toString(16)}>"
+	override fun equals(other: Any?): Boolean {
+		return other is DslFunction
+	}
+
+	override fun hashCode(): Int {
+		var result = paramNames.hashCode()
+		result = 31 * result + block.hashCode()
+		return result
+	}
+	fun getParamListToMap(list: List<DslValue>, beginToken: Token, endToken: Token): Map<String, DslValue> {
+		if(list.size != paramNames.size) throw DslParamNotMatchException(beginToken, endToken, paramNames.size, list.size)
+		return paramNames.zip(list).toMap()
+	}
+	fun run(param: Map<String, DslValue>, processOption: ProcessOption, errorHandler: ParseErrorHandler,
+	        currentElement: DslElement, currentScope: DslScope): DslValue? {
+		val subScope = DslScope(currentScope, setOf(JumpType.Next::class.java, JumpType.Return::class.java))
+		for((name, value) in param) {
+			subScope.defineField(name, null, DslFieldModifiers())
+			subScope.trySetField(name, null, null, null, value)
+		}
+		return when(val jmp = XmlDslParser.parseBlock(block, processOption, errorHandler, currentElement, subScope)) {
+			JumpType.Next -> null
+			is JumpType.Return -> jmp.value
+			else -> null
+		}
+	}
+}
+
+class DslType(private val type: DslValueType) : DslValue() {
+	override fun getType() = DslValueType.Type
+	override fun toString(name: String, option: ProcessOption): String = "<type:${type.name}>"
+	override fun equals(other: Any?): Boolean {
+		if(this === other) return true
+		if(other !is DslType) return false
+		return type == other.type
+	}
+	override fun hashCode(): Int {
+		return type.hashCode()
+	}
+}
+
+class DslSet(private val value: Set<DslValue>) : DslValue() {
+	override fun getType() = DslValueType.Set
+	override fun toString(name: String, option: ProcessOption): String = option.onSetToString(name, value)
+	override fun equals(other: Any?): Boolean {
+		if(this === other) return true
+		if(other !is DslSet) return false
+		return value == other.value
+	}
+	override fun hashCode(): Int {
+		return value.hashCode()
+	}
+}
+
+class DslDict(private val value: Map<DslValue, DslValue>) : DslValue() {
+	override fun getType() = DslValueType.Dict
+	override fun toString(name: String, option: ProcessOption): String = option.onDictToString(name, value)
+	override fun equals(other: Any?): Boolean {
+		if(this === other) return true
+		if(other !is DslDict) return false
+		return value == other.value
+	}
+	override fun hashCode(): Int {
+		return value.hashCode()
+	}
+}
+
+class DslPair(private val value: Pair<DslValue, DslValue>) : DslValue() {
+	override fun getType() = DslValueType.Pair
+	override fun toString(name: String, option: ProcessOption): String = option.onListToString(name, value.toList())
+	override fun equals(other: Any?): Boolean {
+		if(this === other) return true
+		if(other !is DslPair) return false
+		return value == other.value
+	}
+	override fun hashCode(): Int = value.hashCode()
+}
+
+class DslAny(private val value: DslValue) : DslValue() {
+	override fun getType() = value.getType()
+	override fun toString(name: String, option: ProcessOption): String? = value.toString(name, option)
+	override fun equals(other: Any?): Boolean {
+		if (this === other) return true
+		if (other !is DslAny) return false
+		return value == other.value
+	}
+	override fun hashCode(): Int = value.hashCode()
 }
 
 class DslValueState(val name: String, private val defineSymbol: Token?, val modifier: DslFieldModifiers) {
