@@ -437,30 +437,6 @@ public class XmlDslParserBaseListener implements XmlDslParserListener {
 	 *
 	 * <p>The default implementation does nothing.</p>
 	 */
-	@Override public void enterFunctionCall(XmlDslParser.FunctionCallContext ctx) { }
-	/**
-	 * {@inheritDoc}
-	 *
-	 * <p>The default implementation does nothing.</p>
-	 */
-	@Override public void exitFunctionCall(XmlDslParser.FunctionCallContext ctx) { }
-	/**
-	 * {@inheritDoc}
-	 *
-	 * <p>The default implementation does nothing.</p>
-	 */
-	@Override public void enterFunctionCallParameters(XmlDslParser.FunctionCallParametersContext ctx) { }
-	/**
-	 * {@inheritDoc}
-	 *
-	 * <p>The default implementation does nothing.</p>
-	 */
-	@Override public void exitFunctionCallParameters(XmlDslParser.FunctionCallParametersContext ctx) { }
-	/**
-	 * {@inheritDoc}
-	 *
-	 * <p>The default implementation does nothing.</p>
-	 */
 	@Override public void enterPostfixUnaryOperation(XmlDslParser.PostfixUnaryOperationContext ctx) { }
 	/**
 	 * {@inheritDoc}
@@ -480,6 +456,18 @@ public class XmlDslParserBaseListener implements XmlDslParserListener {
 	 * <p>The default implementation does nothing.</p>
 	 */
 	@Override public void exitListAccess(XmlDslParser.ListAccessContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
+	@Override public void enterFunctionCall(XmlDslParser.FunctionCallContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
+	@Override public void exitFunctionCall(XmlDslParser.FunctionCallContext ctx) { }
 	/**
 	 * {@inheritDoc}
 	 *
@@ -552,6 +540,30 @@ public class XmlDslParserBaseListener implements XmlDslParserListener {
 	 * <p>The default implementation does nothing.</p>
 	 */
 	@Override public void exitAssignmentOperator(XmlDslParser.AssignmentOperatorContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
+	@Override public void enterFunctionDeclaration(XmlDslParser.FunctionDeclarationContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
+	@Override public void exitFunctionDeclaration(XmlDslParser.FunctionDeclarationContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
+	@Override public void enterFunctionParameters(XmlDslParser.FunctionParametersContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
+	@Override public void exitFunctionParameters(XmlDslParser.FunctionParametersContext ctx) { }
 
 	/**
 	 * {@inheritDoc}

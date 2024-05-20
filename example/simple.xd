@@ -24,4 +24,13 @@ xml {
     }
     ele
     ele
+    fun test(i) {
+        val e = elem {
+            i
+        }
+        return e
+    }
+    test("asd")
+    test("qwe")
 }
+

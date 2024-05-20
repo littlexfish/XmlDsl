@@ -35,3 +35,6 @@ class DslTypesException(beginSymbol: Token, endSymbol: Token, val expectTypes: S
 	DslParseException(beginSymbol, endSymbol, "Expect types [${expectTypes.joinToString(", ")}], but got $gotType")
 class DslParamNotMatchException(beginSymbol: Token, endSymbol: Token, val expectCount: Int, val gotCount: Int) :
 	DslParseException(beginSymbol, endSymbol, "Expect $expectCount parameters, but got $gotCount")
+class DslDuplicateParameterException(symbol: Token, val name: String) :
+	DslParseException(symbol, symbol, "Duplicate parameter \"$name\"")
+

@@ -38,7 +38,7 @@ statement
 
 declaration
     : propertyDeclaration
-//    | functionDeclaration // keep for future use
+    | functionDeclaration
     ;
 
 propertyDeclaration
@@ -112,7 +112,6 @@ atomicExpression
     | parenthesizedExpression
     | literalConstant
     | collectionLiteral
-//    | functionCall // keep for future use
     ;
 
 parenthesizedExpression
@@ -152,7 +151,7 @@ ifExpression
 jumpExpression
     : CONTINUE
     | BREAK
-//    | RETURN expression? // keep for future use
+    | RETURN expression?
     ;
 
 loopExpression
@@ -172,21 +171,18 @@ collectionLiteral
     : LSQUARE expression? (COMMA expression)* COMMA? RSQUARE
     ;
 
-functionCall
-    : identifier LPAREN functionCallParameters RPAREN
-    ;
-
-functionCallParameters
-    : identifier (COMMA identifier)* COMMA?
-    ;
-
 postfixUnaryOperation
     : listAccess
+    | functionCall
 //    | NL* DOT postfixUnaryExpression
     ;
 
 listAccess
     : LSQUARE expression RSQUARE
+    ;
+
+functionCall
+    : LPAREN (expression (COMMA expression)* COMMA?)? RPAREN
     ;
 
 multiplicativeOperation
@@ -226,13 +222,13 @@ assignmentOperator
     | MOD_ASSIGNMENT
     ;
 
-//functionDeclaration
-//    : FUN (NL* simpleIdentifier)? NL*
-//    functionValueParameters (NL* COLON NL* type)?
-//     (NL* functionBody)?
-//    ; // keep for future use
+functionDeclaration
+    : FUN (NL* identifier)? NL* functionParameters NL* block
+    ;
 
-
+functionParameters
+    : LPAREN (identifier (COMMA identifier)* COMMA?)? RPAREN
+    ;
 
 
 

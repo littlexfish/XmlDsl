@@ -132,23 +132,27 @@ object XmlDslParser {
 
 	private fun parseDeclaration(ctx: DeclarationContext, processOption: ProcessOption, errorHandler: ParseErrorHandler,
 	                             currentElement: DslElement, currentScope: DslScope) {
-		val decl = ctx.propertyDeclaration()
-		val state = decl.dslFieldModifierState()
-		val symbol = decl.identifier().Identifier().symbol
-		try {
-			currentScope.defineField(symbol.text, symbol, DslFieldModifiers(state))
-		}
-		catch(e: DslParseException) {
-			errorHandler.handleException(symbol.text, e)
-		}
-		if(decl.ASSIGNMENT() != null) {
-			val expr = parseExpression(decl.expression(), processOption, errorHandler, currentElement, currentScope)
+		ctx.propertyDeclaration()?.let {
+			val state = it.dslFieldModifierState()
+			val symbol = it.identifier().Identifier().symbol
 			try {
-				currentScope.trySetField(symbol.text, symbol, decl.expression().start, decl.expression().stop, expr)
+				currentScope.defineField(symbol.text, symbol, DslFieldModifiers(state))
 			}
 			catch(e: DslParseException) {
 				errorHandler.handleException(symbol.text, e)
 			}
+			if(it.ASSIGNMENT() != null) {
+				val expr = parseExpression(it.expression(), processOption, errorHandler, currentElement, currentScope)
+				try {
+					currentScope.trySetField(symbol.text, symbol, it.expression().start, it.expression().stop, expr)
+				}
+				catch(e: DslParseException) {
+					errorHandler.handleException(symbol.text, e)
+				}
+			}
+		}
+		ctx.functionDeclaration()?.let {
+			parseFunctionDeclaration(it, errorHandler, currentScope)
 		}
 	}
 
@@ -239,8 +243,16 @@ object XmlDslParser {
 			return JumpType.Next
 		}
 		ctx.jumpExpression()?.let {
-			val type = ctx.jumpExpression().jumpType()
-			val symbol = ctx.jumpExpression().BREAK()?.symbol ?: ctx.jumpExpression().CONTINUE().symbol
+			val type = if(it.BREAK() != null) JumpType.Break
+			else if(it.CONTINUE() != null) JumpType.Continue
+			else {
+				if(it.expression() == null) JumpType.Return(null)
+				else {
+					val expr = parseExpression(it.expression(), processOption, errorHandler, currentElement, currentScope)
+					JumpType.Return(expr)
+				}
+			}
+			val symbol = ctx.jumpExpression().BREAK()?.symbol ?: ctx.jumpExpression().CONTINUE()?.symbol ?: ctx.jumpExpression().RETURN().symbol
 			if(!currentScope.canDoJump(type::class.java))
 				errorHandler.handleException(type.name.lowercase(), DslNonLoopJumpException(symbol))
 			return type
@@ -265,11 +277,6 @@ object XmlDslParser {
 			}
 		}
 		return JumpType.Next
-	}
-
-	private fun JumpExpressionContext.jumpType(): JumpType {
-		return if(BREAK() != null) JumpType.Break
-		else JumpType.Continue
 	}
 
 	private fun parseForExpression(ctx: ForExpressionContext, processOption: ProcessOption,
@@ -538,8 +545,8 @@ object XmlDslParser {
 	private fun parsePostfixUnaryExpression(ctx: PostfixUnaryExpressionContext, processOption: ProcessOption,
 	                                        errorHandler: ParseErrorHandler, currentElement: DslElement, currentScope: DslScope): DslValue {
 		val atomic = parseAtomicExpression(ctx.atomicExpression(), processOption, errorHandler, currentElement, currentScope)
-		ctx.postfixUnaryOperation()?.let {
-			it.listAccess()?.let { l ->
+		ctx.postfixUnaryOperation()?.let { c ->
+			c.listAccess()?.let { l ->
 				if(atomic !is DslList) {
 					errorHandler.handleException(
 						ctx.postfixUnaryOperation().text,
@@ -568,6 +575,22 @@ object XmlDslParser {
 				}
 				return list[idx]
 			}
+			c.functionCall()?.let {
+				try {
+					if(atomic !is DslFunction) {
+						errorHandler.handleException(it.text, DslTypeException(it.start, it.stop, DslValueType.Function, atomic.getType()))
+						return DslNull
+					}
+					val args = it.expression().map { expr ->
+						parseExpression(expr, processOption, errorHandler, currentElement, currentScope)
+					}
+					val paramMap = atomic.getParamListToMap(args, it.start, it.stop)
+					return atomic(paramMap, processOption, errorHandler, currentElement, currentScope) ?: DslNull
+				}
+				catch(e: DslParseException) {
+					errorHandler.handleException(it.text, e)
+				}
+			}
 		}
 		return atomic
 	}
@@ -583,7 +606,7 @@ object XmlDslParser {
 		ctx.collectionLiteral()?.let {
 			return parseCollectionLiteral(it, processOption, errorHandler, currentElement, currentScope)
 		}
-		ctx.identifier().let {
+		ctx.identifier()?.let {
 			val symbol = it.Identifier().symbol
 			try {
 				return currentScope.getField(symbol.text, symbol)
@@ -692,6 +715,29 @@ object XmlDslParser {
 			list.add(parseExpression(it, processOption, errorHandler, currentElement, currentScope))
 		}
 		return DslList(list)
+	}
+
+	private fun parseFunctionDeclaration(ctx: FunctionDeclarationContext, errorHandler: ParseErrorHandler, currentScope: DslScope) {
+		val symbol = ctx.identifier().Identifier().symbol
+		val name = symbol.text
+		try {
+			currentScope.defineField(name, symbol, DslFieldModifiers(DslFieldModifiers.FieldState.Block))
+		}
+		catch(e: DslParseException) {
+			errorHandler.handleException(name, e)
+			return
+		}
+		val params = ctx.functionParameters().identifier().map { it.Identifier().symbol }
+		val pSet = mutableSetOf<String>()
+		for(p in params) {
+			if(!pSet.add(p.text)) {
+				errorHandler.handleException(p.text, DslDuplicateParameterException(p, p.text))
+			}
+		}
+		if(params.size != pSet.size) return
+		val block = ctx.block()
+		val func = DslFunction(params.map { it.text }, block)
+		currentScope.trySetField(name, symbol, ctx.start, ctx.stop, func)
 	}
 
 }

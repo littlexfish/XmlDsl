@@ -178,7 +178,7 @@ class DslFunction(private val paramNames: List<String>, private val block: Block
 		if(list.size != paramNames.size) throw DslParamNotMatchException(beginToken, endToken, paramNames.size, list.size)
 		return paramNames.zip(list).toMap()
 	}
-	fun run(param: Map<String, DslValue>, processOption: ProcessOption, errorHandler: ParseErrorHandler,
+	operator fun invoke(param: Map<String, DslValue>, processOption: ProcessOption, errorHandler: ParseErrorHandler,
 	        currentElement: DslElement, currentScope: DslScope): DslValue? {
 		val subScope = DslScope(currentScope, setOf(JumpType.Next::class.java, JumpType.Return::class.java))
 		for((name, value) in param) {
