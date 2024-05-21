@@ -1,7 +1,7 @@
 # XmlDsl
 
 ![Build](https://img.shields.io/badge/build-passing-2ecc40)
-![Coverage](https://img.shields.io/badge/coverage-59%25-ff851b)
+![Coverage](https://img.shields.io/badge/coverage-71%25-ff851b)
 ![Version](https://img.shields.io/badge/version-0.1.0-0074d9)
 
 A simple DSL for XML.

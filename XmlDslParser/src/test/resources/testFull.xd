@@ -112,3 +112,80 @@ empty - empty
 1 % true
 1 % false
 1 % empty
+
+// function
+fun test() {
+    return
+}
+test()
+
+fun test1(p) {
+    return p
+}
+test1(0)
+
+true || false
+false || true
+true && false
+false && true
+
+true == true
+false != true
+
+0 > 1
+1 > 0
+0 < 1
+1 < 0
+0 >= 1
+1 >= 0
+0 <= 1
+1 <= 0
+
+0 in [1, 2, 3]
+0 !in [0, 1, 2]
+
+-1
+-true
+-"0"
+
+!true
+!false
+
+{"x": 0, "y": 1}
+<0, 1, 2>
+number
+string
+boolean
+list
+empty
+null
+element
+function
+type
+set
+dict
+pair
+any
+
+0b10
+0o10
+0x10
+
+"\n"
+"\t"
+"\b"
+"\r"
+"\'"
+"\""
+"\\"
+"\$"
+
+"$test"
+"${test()}"
+val n = null
+"$n"
+"${empty}"
+pairOf(0, 1)
+print("hi")
+dict2pairs({"a": 0})
+typeOf(0)

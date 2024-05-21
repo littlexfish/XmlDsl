@@ -546,7 +546,7 @@ object XmlDslParser {
 					is DslBoolean -> DslNumber(if(expr.value) -1.0 else -0.0)
 					is DslString -> DslNumber(-expr.value.toDouble())
 					else -> {
-						errorHandler.handleException(op.ADD().text,
+						errorHandler.handleException(op.SUB().text,
 							DslTypesException(ctx.postfixUnaryExpression().start,
 								ctx.postfixUnaryExpression().stop,
 								setOf(DslValueType.Number, DslValueType.Boolean, DslValueType.String),
@@ -757,7 +757,7 @@ object XmlDslParser {
 		}
 		ctx.StrRef()?.let {
 			val symbol = it.symbol
-			val field = currentScope.getField(symbol.text, symbol)
+			val field = currentScope.getField(symbol.text.substring(1), symbol)
 			return field.toString(symbol.text, processOption) ?: "null"
 		}
 		ctx.stringExpression()?.let {

@@ -1,0 +1,9 @@
+html {
+    attr style = {"xyz": 0}
+    attr class = <"asd", "qwe">
+    head {
+        attr style = [0, 1, 2]
+    }
+    attr x = {"1": 0}
+    attr y = [1, 2]
+}

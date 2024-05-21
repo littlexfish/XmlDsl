@@ -1,5 +1,6 @@
 package net.littlexfish.xmldslparser
 
+import net.littlexfish.xmldslparser.server.HtmlProcessOption
 import net.littlexfish.xmldslparser.server.ParseErrorHandler
 import net.littlexfish.xmldslparser.server.ParseOption
 import net.littlexfish.xmldslparser.server.ProcessOption
@@ -44,8 +45,21 @@ class LibTest {
 	fun testFileFull() {
 		val source = FileDslSource("src/test/resources/testFull.xd")
 		val outputStream = ByteArrayOutputStream()
-		val env = HashMap<String, String?>()
+		val env = HashMap<String, String?>().apply {
+			put("name", "test")
+		}
 		parse(source, outputStream, ParseOption(prettyPrint = true, shortenEmpty = true), env = env)
+		assert(outputStream.toString().isNotEmpty())
+	}
+
+	@Test
+	fun testFileHtml() {
+		val source = FileDslSource("src/test/resources/html.xd")
+		val outputStream = ByteArrayOutputStream()
+		val env = HashMap<String, String?>().apply {
+			put("name", "test")
+		}
+		parse(source, outputStream, ParseOption(prettyPrint = true, shortenEmpty = true), HtmlProcessOption, env = env)
 		assert(outputStream.toString().isNotEmpty())
 	}
 
