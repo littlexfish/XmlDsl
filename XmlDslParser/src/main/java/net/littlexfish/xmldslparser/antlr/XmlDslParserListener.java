@@ -348,15 +348,45 @@ public interface XmlDslParserListener extends ParseTreeListener {
 	 */
 	void exitWhileExpression(XmlDslParser.WhileExpressionContext ctx);
 	/**
-	 * Enter a parse tree produced by {@link XmlDslParser#collectionLiteral}.
+	 * Enter a parse tree produced by {@link XmlDslParser#listLiteral}.
 	 * @param ctx the parse tree
 	 */
-	void enterCollectionLiteral(XmlDslParser.CollectionLiteralContext ctx);
+	void enterListLiteral(XmlDslParser.ListLiteralContext ctx);
 	/**
-	 * Exit a parse tree produced by {@link XmlDslParser#collectionLiteral}.
+	 * Exit a parse tree produced by {@link XmlDslParser#listLiteral}.
 	 * @param ctx the parse tree
 	 */
-	void exitCollectionLiteral(XmlDslParser.CollectionLiteralContext ctx);
+	void exitListLiteral(XmlDslParser.ListLiteralContext ctx);
+	/**
+	 * Enter a parse tree produced by {@link XmlDslParser#dictLiteral}.
+	 * @param ctx the parse tree
+	 */
+	void enterDictLiteral(XmlDslParser.DictLiteralContext ctx);
+	/**
+	 * Exit a parse tree produced by {@link XmlDslParser#dictLiteral}.
+	 * @param ctx the parse tree
+	 */
+	void exitDictLiteral(XmlDslParser.DictLiteralContext ctx);
+	/**
+	 * Enter a parse tree produced by {@link XmlDslParser#dictEntry}.
+	 * @param ctx the parse tree
+	 */
+	void enterDictEntry(XmlDslParser.DictEntryContext ctx);
+	/**
+	 * Exit a parse tree produced by {@link XmlDslParser#dictEntry}.
+	 * @param ctx the parse tree
+	 */
+	void exitDictEntry(XmlDslParser.DictEntryContext ctx);
+	/**
+	 * Enter a parse tree produced by {@link XmlDslParser#setLiteral}.
+	 * @param ctx the parse tree
+	 */
+	void enterSetLiteral(XmlDslParser.SetLiteralContext ctx);
+	/**
+	 * Exit a parse tree produced by {@link XmlDslParser#setLiteral}.
+	 * @param ctx the parse tree
+	 */
+	void exitSetLiteral(XmlDslParser.SetLiteralContext ctx);
 	/**
 	 * Enter a parse tree produced by {@link XmlDslParser#postfixUnaryOperation}.
 	 * @param ctx the parse tree
@@ -467,4 +497,14 @@ public interface XmlDslParserListener extends ParseTreeListener {
 	 * @param ctx the parse tree
 	 */
 	void exitFunctionParameters(XmlDslParser.FunctionParametersContext ctx);
+	/**
+	 * Enter a parse tree produced by {@link XmlDslParser#type}.
+	 * @param ctx the parse tree
+	 */
+	void enterType(XmlDslParser.TypeContext ctx);
+	/**
+	 * Exit a parse tree produced by {@link XmlDslParser#type}.
+	 * @param ctx the parse tree
+	 */
+	void exitType(XmlDslParser.TypeContext ctx);
 }

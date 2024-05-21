@@ -3,7 +3,16 @@ package net.littlexfish.xmldslparser.server
 import org.antlr.v4.runtime.Token
 
 abstract class DslParseException(val beginSymbol: Token?, val endSymbol: Token?, message: String):
-	RuntimeException("At ${getSymbolBegin(beginSymbol)} to ${getSymbolEnd(endSymbol)}, $message")
+	RuntimeException(getExceptionMessage(beginSymbol, endSymbol, message))
+
+private fun getExceptionMessage(beginSymbol: Token?, endSymbol: Token?, message: String): String {
+	return if(beginSymbol == null || endSymbol == null) {
+		val single = beginSymbol ?: endSymbol
+		if(single != null) "At ${getSymbolBegin(single)}, $message"
+		else message
+	}
+	else "At ${getSymbolBegin(beginSymbol)} to ${getSymbolEnd(endSymbol)}, $message"
+}
 
 private fun getSymbolBegin(symbol: Token?): String {
 	return "[${symbol?.line}:${symbol?.charPositionInLine?.plus(1)}]"
@@ -37,4 +46,6 @@ class DslParamNotMatchException(beginSymbol: Token, endSymbol: Token, val expect
 	DslParseException(beginSymbol, endSymbol, "Expect $expectCount parameters, but got $gotCount")
 class DslDuplicateParameterException(symbol: Token, val name: String) :
 	DslParseException(symbol, symbol, "Duplicate parameter \"$name\"")
+class DslPanicException(val msg: String) :
+	DslParseException(null, null, msg)
 

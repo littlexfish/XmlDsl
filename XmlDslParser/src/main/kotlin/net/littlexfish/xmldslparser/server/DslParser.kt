@@ -24,8 +24,7 @@ data class ProcessOption(
 		"{${dict.map { (k, v) -> "${k.toString("", ProcessOption())}: ${v.toString("", ProcessOption())}" }.joinToString(", ")}}"
 	},
 	val onSetToString: (String /* name */, Set<DslValue> /* set */) -> String = { _, set ->
-		val list = onListToString("", set.toList())
-		"<${list.substring(1..<list.length)}>"
+		"<${set.mapNotNull { it.toString("", ProcessOption()) }.joinToString(", ")}>"
 	}
 )
 
@@ -76,8 +75,16 @@ private fun createGlobalScope(env: Map<String, String?>): DslScope {
 		addGlobalField("USER_NAME", DslString(System.getProperty("user.name")))
 		addGlobalField("USER_HOME", DslString(System.getProperty("user.home")))
 		addGlobalField("DIR", DslString(System.getProperty("user.dir")))
+		// type field, to prevent code be detected as identifier
+		for(type in DslValueType.entries) {
+			addGlobalField(type.name.lowercase(), DslType(type))
+		}
 		// pre-defined function
-		addGlobalField("pair", PairFunc())
+		addGlobalField("pairOf", PairFunc())
+		addGlobalField("print", PrintFunc())
+		addGlobalField("panic", PanicFunc())
+		addGlobalField("dict2pairs", DictToPairsFunc())
+		addGlobalField("typeOf", TypeOfFunc())
 		// user field
 		for((key, value) in env) {
 			addGlobalField(key, value?.let { DslString(it) } ?: DslNull)
@@ -608,8 +615,26 @@ object XmlDslParser {
 		ctx.literalConstant()?.let {
 			return parseLiteralConstant(it, processOption, errorHandler, currentElement, currentScope)
 		}
-		ctx.collectionLiteral()?.let {
-			return parseCollectionLiteral(it, processOption, errorHandler, currentElement, currentScope)
+		ctx.listLiteral()?.let {
+			return parseListLiteral(it, processOption, errorHandler, currentElement, currentScope)
+		}
+		ctx.dictLiteral()?.let {
+			val dict = HashMap<DslValue, DslValue>()
+			it.dictEntry().forEach { d ->
+				val k = d.expression(0)
+				val v = d.expression(1)
+				val key = parseExpression(k, processOption, errorHandler, currentElement, currentScope)
+				val value = parseExpression(v, processOption, errorHandler, currentElement, currentScope)
+				dict[key] = value
+			}
+			return DslDict(dict)
+		}
+		ctx.setLiteral()?.let {
+			val set = HashSet<DslValue>()
+			it.expression().forEach { e ->
+				set.add(parseExpression(e, processOption, errorHandler, currentElement, currentScope))
+			}
+			return DslSet(set)
 		}
 		ctx.identifier()?.let {
 			val symbol = it.Identifier().symbol
@@ -619,6 +644,24 @@ object XmlDslParser {
 			catch(e: DslParseException) {
 				errorHandler.handleException(symbol.text, e)
 			}
+		}
+		ctx.type()?.let {
+			val type = when(it.text) {
+				"number" -> DslValueType.Number
+				"string" -> DslValueType.String
+				"boolean" -> DslValueType.Boolean
+				"list" -> DslValueType.List
+				"empty" -> DslValueType.Empty
+				"null" -> DslValueType.Null
+				"element" -> DslValueType.Element
+				"function" -> DslValueType.Function
+				"type" -> DslValueType.Type
+				"set" -> DslValueType.Set
+				"dict" -> DslValueType.Dict
+				"pair" -> DslValueType.Pair
+				else -> DslValueType.Any
+			}
+			return DslType(type)
 		}
 		return DslNull // here should not be reached
 	}
@@ -713,8 +756,8 @@ object XmlDslParser {
 		return parseExpression(ctx.expression(), processOption, errorHandler, currentElement, currentScope)
 	}
 
-	private fun parseCollectionLiteral(ctx: CollectionLiteralContext, processOption: ProcessOption,
-	                                   errorHandler: ParseErrorHandler, currentElement: DslElement, currentScope: DslScope): DslValue {
+	private fun parseListLiteral(ctx: ListLiteralContext, processOption: ProcessOption,
+	                             errorHandler: ParseErrorHandler, currentElement: DslElement, currentScope: DslScope): DslValue {
 		val list = ArrayList<DslValue>()
 		ctx.expression().forEach {
 			list.add(parseExpression(it, processOption, errorHandler, currentElement, currentScope))

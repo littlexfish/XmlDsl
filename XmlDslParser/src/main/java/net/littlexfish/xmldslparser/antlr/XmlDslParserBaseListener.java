@@ -425,13 +425,49 @@ public class XmlDslParserBaseListener implements XmlDslParserListener {
 	 *
 	 * <p>The default implementation does nothing.</p>
 	 */
-	@Override public void enterCollectionLiteral(XmlDslParser.CollectionLiteralContext ctx) { }
+	@Override public void enterListLiteral(XmlDslParser.ListLiteralContext ctx) { }
 	/**
 	 * {@inheritDoc}
 	 *
 	 * <p>The default implementation does nothing.</p>
 	 */
-	@Override public void exitCollectionLiteral(XmlDslParser.CollectionLiteralContext ctx) { }
+	@Override public void exitListLiteral(XmlDslParser.ListLiteralContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
+	@Override public void enterDictLiteral(XmlDslParser.DictLiteralContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
+	@Override public void exitDictLiteral(XmlDslParser.DictLiteralContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
+	@Override public void enterDictEntry(XmlDslParser.DictEntryContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
+	@Override public void exitDictEntry(XmlDslParser.DictEntryContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
+	@Override public void enterSetLiteral(XmlDslParser.SetLiteralContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
+	@Override public void exitSetLiteral(XmlDslParser.SetLiteralContext ctx) { }
 	/**
 	 * {@inheritDoc}
 	 *
@@ -564,6 +600,18 @@ public class XmlDslParserBaseListener implements XmlDslParserListener {
 	 * <p>The default implementation does nothing.</p>
 	 */
 	@Override public void exitFunctionParameters(XmlDslParser.FunctionParametersContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
+	@Override public void enterType(XmlDslParser.TypeContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
+	@Override public void exitType(XmlDslParser.TypeContext ctx) { }
 
 	/**
 	 * {@inheritDoc}

@@ -60,6 +60,17 @@ CONTINUE    : 'continue';
 BREAK       : 'break';
 IN          : 'in';
 NOT_IN      : '!in' (WS | NL)+;
+ANY         : 'any';
+NUMBER      : 'number';
+STRING      : 'string';
+BOOLEAN     : 'boolean';
+LIST        : 'list';
+ELEMENT     : 'element';
+FUNCTION    : 'function';
+TYPE        : 'type';
+SET         : 'set';
+DICT        : 'dict';
+PAIR        : 'pair';
 
 /* Keep */
 // Separators & Operators
@@ -76,16 +87,6 @@ AS_SAFE     : 'as?';
 IS          : 'is';
 NOT_IS      : '!is' (WS | NL)+;
 VOID        : 'void';
-ANY         : 'any';
-NUMBER      : 'number';
-STRING      : 'string';
-BOOLEAN     : 'boolean';
-LIST        : 'list';
-ELEMENT     : 'element';
-FUNCTION    : 'function';
-TYPE        : 'type';
-SET         : 'set';
-DICT        : 'dict';
 
 // LITERALS
 NumberLiteral: '-'? (Int | Hex | Bin | Oct | Real);
@@ -189,6 +190,18 @@ Inside_Comment         : (LineComment | DelimitedComment) -> channel(HIDDEN);
 Inside_WS              : WS                               -> skip;
 Inside_NL              : NL                               -> skip;
 
+Inside_ANY         : ANY -> type(ANY);
+Inside_NUMBER      : NUMBER -> type(NUMBER);
+Inside_STRING      : STRING -> type(STRING);
+Inside_BOOLEAN     : BOOLEAN -> type(BOOLEAN);
+Inside_LIST        : LIST -> type(LIST);
+Inside_ELEMENT     : ELEMENT -> type(ELEMENT);
+Inside_FUNCTION    : FUNCTION -> type(FUNCTION);
+Inside_TYPE        : TYPE -> type(TYPE);
+Inside_SET         : SET -> type(SET);
+Inside_DICT        : DICT -> type(DICT);
+Inside_PAIR        : PAIR -> type(PAIR);
+
 /* Keep */
 // Separators & Operators
 Inside_ELLIPSIS    : ELLIPSIS -> type(ELLIPSIS);
@@ -204,16 +217,6 @@ Inside_AS_SAFE     : AS_SAFE -> type(AS_SAFE);
 Inside_IS          : IS -> type(IS);
 Inside_NOT_IS      : NOT_IS -> type(NOT_IS);
 Inside_VOID        : VOID -> type(VOID);
-Inside_ANY         : ANY -> type(ANY);
-Inside_NUMBER      : NUMBER -> type(NUMBER);
-Inside_STRING      : STRING -> type(STRING);
-Inside_BOOLEAN     : BOOLEAN -> type(BOOLEAN);
-Inside_LIST        : LIST -> type(LIST);
-Inside_ELEMENT     : ELEMENT -> type(ELEMENT);
-Inside_FUNCTION    : FUNCTION -> type(FUNCTION);
-Inside_TYPE        : TYPE -> type(TYPE);
-Inside_SET         : SET -> type(SET);
-Inside_DICT        : DICT -> type(DICT);
 
 mode DoubleQuoteStrig;
 

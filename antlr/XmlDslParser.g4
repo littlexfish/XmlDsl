@@ -111,7 +111,10 @@ atomicExpression
     : identifier
     | parenthesizedExpression
     | literalConstant
-    | collectionLiteral
+    | listLiteral
+    | dictLiteral
+    | setLiteral
+    | type
     ;
 
 parenthesizedExpression
@@ -167,8 +170,20 @@ whileExpression
     : WHILE NL* expression NL* block
     ;
 
-collectionLiteral
+listLiteral
     : LSQUARE expression? (COMMA expression)* COMMA? RSQUARE
+    ;
+
+dictLiteral
+    : LCURL (dictEntry (COMMA dictEntry)* COMMA?)? RCURL
+    ;
+
+dictEntry
+    : expression COLON expression
+    ;
+
+setLiteral
+    : LANGLE (expression (COMMA expression)* COMMA?)? RANGLE
     ;
 
 postfixUnaryOperation
@@ -230,8 +245,12 @@ functionParameters
     : LPAREN (identifier (COMMA identifier)* COMMA?)? RPAREN
     ;
 
-
-
+type
+    : ANY | NUMBER | STRING
+    | BOOLEAN | LIST | ELEMENT
+    | FUNCTION | TYPE | SET
+    | DICT | PAIR
+    ;
 
 
 

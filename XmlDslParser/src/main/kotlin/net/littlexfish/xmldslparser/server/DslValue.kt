@@ -231,6 +231,7 @@ class DslDict(private val value: Map<DslValue, DslValue>) : DslValue() {
 	override fun hashCode(): Int {
 		return value.hashCode()
 	}
+	fun toPairList(): DslList = DslList(value.map { DslPair(it.key to it.value) })
 }
 
 class DslPair(private val value: Pair<DslValue, DslValue>) : DslValue() {

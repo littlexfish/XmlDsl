@@ -24,9 +24,6 @@ Design details will create as feature issues.
 - [ ] `include` function
 - [ ] `import` function
 - [ ] `export` function
-- [ ] add function type
-- [ ] add function call
-- [ ] add type process
 - [ ] code highlighter
 
 ## Well-known Issues
