@@ -1,6 +1,7 @@
 package net.littlexfish.xmldslparser.server
 
 import net.littlexfish.xmldslparser.antlr.XmlDslParser.*
+import net.littlexfish.xmldslparser.server.builtin.*
 import net.littlexfish.xmldslparser.version
 import org.antlr.v4.runtime.Token
 import java.io.File
@@ -64,6 +65,7 @@ data class ParseErrorDetail(val text: String, val dslParseException: DslParseExc
 
 private fun createGlobalScope(env: Map<String, String?>): DslScope {
 	return DslScope().apply {
+		// pre-defined field
 		addGlobalField("VERSION", DslString(version))
 		addGlobalField("JAVA_VERSION", DslString(System.getProperty("java.version")))
 		addGlobalField("OS", DslString(System. getProperty("os.name")))
@@ -74,6 +76,9 @@ private fun createGlobalScope(env: Map<String, String?>): DslScope {
 		addGlobalField("USER_NAME", DslString(System.getProperty("user.name")))
 		addGlobalField("USER_HOME", DslString(System.getProperty("user.home")))
 		addGlobalField("DIR", DslString(System.getProperty("user.dir")))
+		// pre-defined function
+		addGlobalField("pair", PairFunc())
+		// user field
 		for((key, value) in env) {
 			addGlobalField(key, value?.let { DslString(it) } ?: DslNull)
 		}

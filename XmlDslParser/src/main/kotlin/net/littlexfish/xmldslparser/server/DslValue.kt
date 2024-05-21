@@ -162,7 +162,7 @@ class DslElement(private val name: String, val scope: DslScope) : DslValue() {
 
 }
 
-class DslFunction(private val paramNames: List<String>, private val block: BlockContext) : DslValue() {
+open class DslFunction(private val paramNames: List<String>, private val block: BlockContext?) : DslValue() {
 	override fun getType() = DslValueType.Function
 	override fun toString(name: String, option: ProcessOption): String = "<element#${hashCode().toUInt().toString(16)}>"
 	override fun equals(other: Any?): Boolean {
@@ -178,8 +178,9 @@ class DslFunction(private val paramNames: List<String>, private val block: Block
 		if(list.size != paramNames.size) throw DslParamNotMatchException(beginToken, endToken, paramNames.size, list.size)
 		return paramNames.zip(list).toMap()
 	}
-	operator fun invoke(param: Map<String, DslValue>, processOption: ProcessOption, errorHandler: ParseErrorHandler,
+	open operator fun invoke(param: Map<String, DslValue>, processOption: ProcessOption, errorHandler: ParseErrorHandler,
 	        currentElement: DslElement, currentScope: DslScope): DslValue? {
+		block ?: throw IllegalStateException("User function shall not have null block")
 		val subScope = DslScope(currentScope, setOf(JumpType.Next::class.java, JumpType.Return::class.java))
 		for((name, value) in param) {
 			subScope.defineField(name, null, DslFieldModifiers())
