@@ -1,0 +1,114 @@
+/* type */
+val a = 0 // number
+val b = "str" // string
+val c = true // boolean
+val d = [0, "str"] // list
+val e = empty // empty
+val f = null // null
+val g = elem { "content" } // element
+fun h() { return 0 } // function
+val i = typeOf(a) // type
+val j = <"set", 0> // set
+val k = {"dict": 1} // dict
+val l = pairOf(0, "str") // pair
+
+/* element */
+// content without handle as a variable will
+// be processed into file
+elem { // create a element
+    "content" // directly give a string
+    a // use variable a
+    b // use variable b
+}
+
+/* function */
+// create a function
+fun plus(a, b) {
+    // do something
+    return a + b // return something or no return
+}
+plus(1, 2) // call function
+
+/* calculation */
+1 + 2 // plus
+2 - 1 // minus
+2 * 3 // times
+6 / 2 // div
+6 % 4 // mod
+
+"asd" + 2 // string concat
+[1, 2] + 3 // list concat
+[1, 2] + [3, 4] // list concat
+
+/* comparison */
+true || false
+true && false
+a in [0, 1, 2, 3] // something in a list
+a !in [0, 1, 2, 3] // something not in a list
+a == b // equal
+a != b // not equal
+a > 0 // greater
+a < 1 // less
+a >= 2 // greater or equal
+a <= 3 // less or equal
+
+/* variable definition */
+val m = 0 // immutable
+var n = 0 // mutable
+attr o = 0 // attribute & mutable
+
+// assign
+n = "1"
+o = true
+
+/* control */
+if a > 0 {
+    // do something
+}
+else { // note: no else if
+    // do something
+}
+
+for x in [1, 2, 3] {
+    // do something
+}
+
+while a > 0 {
+    // do something
+}
+
+/* other */
+// range
+0..10 // create [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
+
+/* pre-define */
+// fields
+VERSION // XmlDsl version
+JAVA_VERSION // Java Virtual Machine version
+OS // Operating System
+ARCH // Architecture
+FILE_SEPARATOR // File separator
+PATH_SEPARATOR // Path separator
+LINE_SEPARATOR // Line separator
+USER_NAME // User name
+USER_HOME // User home
+DIR // Current directory
+number // Number type
+string // String type
+boolean // Boolean type
+list // List type
+typeOf(empty) // Empty type
+null // Null type
+element // Element type
+function // Function type
+type // Type type
+set // Set type
+dict // Dict type
+pair // Pair type
+any // Any type
+// functions
+pairOf(0, 1) // create a pair
+print("print something") // print something
+// panic("panic") // panic
+dict2pairs({"a": 1, "b": 2}) // dict to pair list
+typeOf(a) // get type of something
