@@ -236,7 +236,7 @@ class DslDict(private val value: Map<DslValue, DslValue>) : DslValue() {
 
 class DslPair(private val value: Pair<DslValue, DslValue>) : DslValue() {
 	override fun getType() = DslValueType.Pair
-	override fun toString(name: String, option: ProcessOption): String = option.onListToString(name, value.toList())
+	override fun toString(name: String, option: ProcessOption): String = option.onPairToString(name, value)
 	override fun equals(other: Any?): Boolean {
 		if(this === other) return true
 		if(other !is DslPair) return false

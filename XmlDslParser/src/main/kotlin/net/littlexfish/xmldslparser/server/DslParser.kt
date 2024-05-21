@@ -20,6 +20,9 @@ data class ProcessOption(
 	val onListToString: (String /* name */, List<DslValue> /* list */) -> String = { _, list ->
 		"[${list.mapNotNull { it.toString("", ProcessOption()) }.joinToString(", ")}]"
 	},
+	val onPairToString: (String /* name */, Pair<DslValue, DslValue> /* list */) -> String = { _, pair ->
+		"(${pair.first.toString("", ProcessOption())}, ${pair.second.toString("", ProcessOption())})"
+	},
 	val onDictToString: (String /* name */, Map<DslValue, DslValue> /* dict */) -> String = { _, dict ->
 		"{${dict.map { (k, v) -> "${k.toString("", ProcessOption())}: ${v.toString("", ProcessOption())}" }.joinToString(", ")}}"
 	},
@@ -30,13 +33,26 @@ data class ProcessOption(
 
 val HtmlProcessOption = ProcessOption(
 	onListToString = onListToString@{ name, list ->
-		return@onListToString when (name) {
-			"class" -> list.mapNotNull { it.toString("", ProcessOption()) }.joinToString(" ")
-			"style" -> list.mapNotNull { it.toString("", ProcessOption()) }.joinToString("; ")
-			else -> "[${list.mapNotNull { it.toString("", ProcessOption()) }.joinToString(", ")}]"
+		return@onListToString processHtmlToString(name, list, "[%s]")
+	},
+	onDictToString = onDictToString@{ name, dict ->
+		return@onDictToString when(name) {
+			"style" -> dict.mapNotNull { (k, v) -> "${k.toString("", ProcessOption())}: ${v.toString("", ProcessOption())}" }.joinToString("; ")
+			else -> "{${dict.map { (k, v) -> "${k.toString("", ProcessOption())}: ${v.toString("", ProcessOption())}" }.joinToString(", ")}}"
 		}
+	},
+	onSetToString = onSetToString@{ name, set ->
+		return@onSetToString processHtmlToString(name, set.toList(), "<%s>")
 	}
 )
+
+private fun processHtmlToString(name: String, list: List<DslValue>, unprocessFormat: String): String {
+	return when (name) {
+		"class" -> list.mapNotNull { it.toString("", ProcessOption()) }.joinToString(" ")
+		"style" -> list.mapNotNull { it.toString("", ProcessOption()) }.joinToString("; ")
+		else -> unprocessFormat.format(list.mapNotNull { it.toString("", ProcessOption()) }.joinToString(", "))
+	}
+}
 
 class ParseErrorHandler {
 	private val detailList = ArrayList<ParseErrorDetail>()

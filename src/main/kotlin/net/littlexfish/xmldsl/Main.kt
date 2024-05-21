@@ -2,6 +2,7 @@
 package net.littlexfish.xmldsl
 
 import net.littlexfish.xmldslparser.*
+import net.littlexfish.xmldslparser.server.HtmlProcessOption
 import net.littlexfish.xmldslparser.server.ParseOption
 import net.littlexfish.xmldslparser.server.ProcessOption
 import java.io.*
@@ -45,7 +46,11 @@ fun main(args: Array<String>) {
 	val indent = settings[SETTINGS_INDENT] as? String ?: "\t"
 	val shortenEmpty = settings[SETTINGS_SHORTEN_EMPTY] as? Boolean ?: false
 	val env = HashMap<String, String?>(settings[SETTINGS_ENV] as? Map<String, String> ?: mapOf())
-//	val mode = settings[SETTINGS_MODE] as? String // keep to set mode in future
+	val mode = settings[SETTINGS_MODE] as? String
+	val processOption = when {
+		mode?.equals("html", true) == true -> HtmlProcessOption
+		else -> ProcessOption()
+	}
 
 	val option = ParseOption(prettyPrint, indent, shortenEmpty, charset = outputCharset)
 	if(userInput) {
@@ -54,12 +59,12 @@ fun main(args: Array<String>) {
 		val source = InputStreamDslSource(bais, inputCharset)
 		if(terminalOutput) {
 			val baos = ByteArrayOutputStream()
-			parse(source, baos, option, ProcessOption(), env = env)
+			parse(source, baos, option, processOption, env = env)
 			println(baos.toString(outputCharset))
 		}
 		else {
 			val out = FileOutputStream(File(output, "output.xml"))
-			parse(source, out, option, ProcessOption(), env = env)
+			parse(source, out, option, processOption, env = env)
 			out.close()
 		}
 	}
@@ -69,12 +74,12 @@ fun main(args: Array<String>) {
 			val source = InputStreamDslSource(ins, inputCharset)
 			if(terminalOutput) {
 				val baos = ByteArrayOutputStream()
-				parse(source, baos, option, ProcessOption(), env = env)
+				parse(source, baos, option, processOption, env = env)
 				println(baos.toString(outputCharset))
 			}
 			else {
 				val out = FileOutputStream(File(output, input.nameWithoutExtension + ".xml"))
-				parse(source, out, option, ProcessOption(), env = env)
+				parse(source, out, option, processOption, env = env)
 				out.close()
 			}
 			ins.close()
@@ -162,7 +167,7 @@ private fun parseArgs(args: Array<String>): HashMap<String, Any?>? {
 				return null
 			}
 			argEquals(arg, "-o", "--output") -> {
-				settings[SETTINGS_OUTPUT] = getArgValue(args, arg, idx + 1)
+				settings[SETTINGS_OUTPUT] = getArgValue(args, arg, idx)
 				idx++
 			}
 			argEquals(arg, "--") -> {
@@ -178,7 +183,7 @@ private fun parseArgs(args: Array<String>): HashMap<String, Any?>? {
 				settings[SETTINGS_SHORTEN_EMPTY] = true
 			}
 			argEquals(arg, "--input-charset") -> {
-				val charset = getArgValue(args, arg, idx + 1)
+				val charset = getArgValue(args, arg, idx)
 				if(!Charset.isSupported(charset)) {
 					throw IllegalArgumentException("Charset $charset is not supported")
 				}
@@ -186,7 +191,7 @@ private fun parseArgs(args: Array<String>): HashMap<String, Any?>? {
 				idx++
 			}
 			argEquals(arg, "--output-charset") -> {
-				val charset = getArgValue(args, arg, idx + 1)
+				val charset = getArgValue(args, arg, idx)
 				if(!Charset.isSupported(charset)) {
 					throw IllegalArgumentException("Charset $charset is not supported")
 				}
@@ -194,12 +199,12 @@ private fun parseArgs(args: Array<String>): HashMap<String, Any?>? {
 				idx++
 			}
 			argEquals(arg, "--indent") -> {
-				settings[SETTINGS_INDENT] = getArgValue(args, arg, idx + 1)
+				settings[SETTINGS_INDENT] = getArgValue(args, arg, idx)
 				idx++
 			}
 			argEquals(arg, "-e", "--env") -> {
 				val map = settings[SETTINGS_ENV] as? MutableMap<String, String> ?: mutableMapOf()
-				val kv = getArgValue(args, arg, idx + 1)
+				val kv = getArgValue(args, arg, idx)
 				val split = kv.split("=", limit = 2)
 				if(split.size != 2) {
 					throw IllegalArgumentException("Invalid environment variable $kv")
@@ -209,7 +214,7 @@ private fun parseArgs(args: Array<String>): HashMap<String, Any?>? {
 				idx++
 			}
 			argEquals(arg, "--mode") -> {
-				settings[SETTINGS_MODE] = getArgValue(args, arg, idx + 1)
+				settings[SETTINGS_MODE] = getArgValue(args, arg, idx)
 				idx++
 			}
 			else -> {
