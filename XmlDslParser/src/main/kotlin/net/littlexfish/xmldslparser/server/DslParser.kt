@@ -407,7 +407,7 @@ object XmlDslParser {
 				val start = ctx.inExpression(idx).start
 				val stop = ctx.inExpression(idx).stop
 				errorHandler.handleException(text,
-					DslTypeException(start, stop, DslValueType.Number, left.getType()))
+					DslTypeException(start, stop, DslValueType.Number, if(idx == 0) left.getType() else right.getType()))
 				return DslNull
 			}
 			val result = when(ctx.comparisonOperator().text) {
