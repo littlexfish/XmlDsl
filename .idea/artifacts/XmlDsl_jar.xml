@@ -1,10 +1,20 @@
 <component name="ArtifactManager">
-  <artifact type="jar" name="XmlDsl:jar">
+  <artifact type="jar" build-on-make="true" name="XmlDsl:jar">
     <output-path>$PROJECT_DIR$/out/artifacts/XmlDsl_jar</output-path>
     <root id="archive" name="XmlDsl.jar">
       <element id="directory" name="META-INF">
         <element id="file-copy" path="$PROJECT_DIR$/META-INF/MANIFEST.MF" />
       </element>
+      <element id="module-output" name="XmlDsl.main" />
+      <element id="module-output" name="XmlDsl.XmlDslParser.main" />
+      <element id="extracted-dir" path="$USER_HOME$/.gradle/caches/modules-2/files-2.1/com.ibm.icu/icu4j/72.1/bc9057df4b5efddf7f6d1880bf7f3399f4ce5633/icu4j-72.1.jar" path-in-jar="/" />
+      <element id="extracted-dir" path="$USER_HOME$/.gradle/caches/modules-2/files-2.1/org.abego.treelayout/org.abego.treelayout.core/1.0.3/457216e8e6578099ae63667bb1e4439235892028/org.abego.treelayout.core-1.0.3.jar" path-in-jar="/" />
+      <element id="extracted-dir" path="$USER_HOME$/.gradle/caches/modules-2/files-2.1/org.antlr/antlr-runtime/3.5.3/9011fb189c5ed6d99e5f3322514848d1ec1e1416/antlr-runtime-3.5.3.jar" path-in-jar="/" />
+      <element id="extracted-dir" path="$USER_HOME$/.gradle/caches/modules-2/files-2.1/org.antlr/antlr4-runtime/4.13.1/17125bae1d965624e265ef49552f6465a2bfa307/antlr4-runtime-4.13.1.jar" path-in-jar="/" />
+      <element id="extracted-dir" path="$USER_HOME$/.gradle/caches/modules-2/files-2.1/org.antlr/antlr4/4.13.1/71b8e3e31b0821480a5db1486012caa89e673f41/antlr4-4.13.1.jar" path-in-jar="/" />
+      <element id="extracted-dir" path="$USER_HOME$/.gradle/caches/modules-2/files-2.1/org.antlr/ST4/4.3.4/bf68d049dd4e6e104055a79ac3bf9e6307d29258/ST4-4.3.4.jar" path-in-jar="/" />
+      <element id="extracted-dir" path="$USER_HOME$/.gradle/caches/modules-2/files-2.1/org.jetbrains.kotlin/kotlin-stdlib/1.9.23/dbaadea1f5e68f790d242a91a38355a83ec38747/kotlin-stdlib-1.9.23.jar" path-in-jar="/" />
+      <element id="extracted-dir" path="$USER_HOME$/.gradle/caches/modules-2/files-2.1/org.jetbrains/annotations/13.0/919f0dfe192fb4e063e7dacadee7f8bb9a2672a9/annotations-13.0.jar" path-in-jar="/" />
     </root>
   </artifact>
 </component>

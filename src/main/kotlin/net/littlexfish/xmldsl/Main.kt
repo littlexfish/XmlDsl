@@ -120,8 +120,28 @@ private fun getArgValue(args: Array<String>, arg: String, idx: Int): String {
 }
 
 private fun printHelp() {
-
-
+	println("\u001b[1mUsage:\u001b[0m java -jar xml-dsl.jar [options] <input-file>")
+	println()
+	println("\u001b[1mOptions:\u001b[0m")
+	println("  \u001b[1;32m-h, --help\u001b[0m                     Print this help message and exit")
+	println("  \u001b[1;32m-v, --version\u001b[0m                  Print the version information and exit")
+	println("  \u001b[1;32m-o, --output <directory>\u001b[0m       Specify the output directory for files (default is the input file's directory)")
+	println("  \u001b[1;32m--\u001b[0m                             Specify input from terminal or via pipeline")
+	println("  \u001b[1;32m++\u001b[0m                             Specify output to terminal or via pipeline")
+	println("  \u001b[1;32m--pretty-print\u001b[0m                 Output in pretty print format")
+	println("  \u001b[1;32m--shorten-empty\u001b[0m                Use short form for empty elements")
+	println("  \u001b[1;32m--input-charset <charset>\u001b[0m      Specify input character set (default is UTF-8)")
+	println("  \u001b[1;32m--output-charset <charset>\u001b[0m     Specify output character set (default is UTF-8)")
+	println("  \u001b[1;32m--indent <string>\u001b[0m              Specify the string used for indentation (default is \\t)")
+	println("  \u001b[1;32m--mode <mode>\u001b[0m                  Specify the output parsing mode (default is xml, can be xml or html)")
+	println("  \u001b[1;32m-e, --env <key=value>\u001b[0m          Add a global environment variable")
+	println("  \u001b[1;32m<input-file>\u001b[0m                   The input file to be processed")
+	println()
+	println("\u001b[1mExamples:\u001b[0m")
+	println("  java -jar xml-dsl.jar \u001b[1;32m-h\u001b[0m")
+	println("  java -jar xml-dsl.jar \u001b[1;32m--version\u001b[0m")
+	println("  java -jar xml-dsl.jar \u001b[1;32m-o ./output-dir --input-charset UTF-16 --output-charset UTF-16 --indent \"  \" input.xml\u001b[0m")
+	println("  java -jar xml-dsl.jar \u001b[1;32m-o ./output-dir --output-charset UTF-16 --mode html input.html\u001b[0m")
 }
 
 private const val SETTINGS_OUTPUT = "output"
@@ -200,6 +220,10 @@ private fun parseArgs(args: Array<String>): HashMap<String, Any?>? {
 			}
 			argEquals(arg, "--indent") -> {
 				settings[SETTINGS_INDENT] = getArgValue(args, arg, idx)
+					.replace("\\t", "\t")
+					.replace("\\n", "\n")
+					.replace("\\r", "\r")
+					.replace("\\\\", "\\")
 				idx++
 			}
 			argEquals(arg, "-e", "--env") -> {

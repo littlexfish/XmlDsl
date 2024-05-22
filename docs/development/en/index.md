@@ -11,7 +11,7 @@ The project is divided into several modules.
 
 - [Main Module](xmldsl.md): Root module(XmlDsl) of the project, 
   contains the main application, and command line interfaces.
-- [Core Module](xmldslparser.md): Core module(XmlDslParser) of the project, 
+- [Parser Module](xmldslparser.md): Parser module(XmlDslParser) of the project, 
   contains the base parser.
 
 
