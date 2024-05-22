@@ -120,6 +120,7 @@ indexOf([1, 2, 3], 2) // get index of something
 toInt(5.235) // convert to int
 toString(true) // convert to string
 format("format %s", "string") // format string
+toList(<1, 2, 3>) // set to list
 join([1, 2, 3], ", ") // join list
 split("1, 2, 3", ", ") // split string
 replace("1, 2, 3", ", ", " ") // replace string

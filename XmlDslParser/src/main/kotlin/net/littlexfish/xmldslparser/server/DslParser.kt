@@ -97,24 +97,26 @@ private fun createGlobalScope(env: Map<String, String?>): DslScope {
 			addGlobalField(type.name.lowercase(), DslType(type))
 		}
 		// pre-defined function
-		addGlobalField("pairOf", PairFunc)
 		addGlobalField("print", PrintFunc)
 		addGlobalField("panic", PanicFunc)
+		addGlobalField("pairOf", PairFunc)
 		addGlobalField("pairs", PairsFunc)
-		addGlobalField("len", LenFunc)
 		addGlobalField("keys", KeysFunc)
 		addGlobalField("values", ValuesFunc)
-		addGlobalField("typeOf", TypeOfFunc)
+		addGlobalField("len", LenFunc)
 		addGlobalField("indexOf", IndexOfFunc)
-		addGlobalField("toInt", ToIntFunc)
-		addGlobalField("toString", ToStringFunc)
-		addGlobalField("format", FormatFunc)
 		addGlobalField("join", JoinFunc)
 		addGlobalField("split", SplitFunc)
 		addGlobalField("replace", ReplaceFunc)
 		addGlobalField("trim", TrimFunc)
 		addGlobalField("lower", LowerFunc)
 		addGlobalField("upper", UpperFunc)
+		addGlobalField("typeOf", TypeOfFunc)
+		addGlobalField("toInt", ToIntFunc)
+		addGlobalField("toString", ToStringFunc)
+		addGlobalField("format", FormatFunc)
+		addGlobalField("toList", ToListFunc)
+		addGlobalField("toSet", ToSetFunc)
 		addGlobalField("floor", FloorFunc)
 		addGlobalField("ceil", CeilFunc)
 		addGlobalField("round", RoundFunc)
@@ -919,7 +921,7 @@ object XmlDslParser {
 		ctx.expression().forEach {
 			list.add(parseExpression(it, processOption, errorHandler, currentElement, currentScope))
 		}
-		return DslList(list)
+		return DslList(list.filter { it != DslNull && it != DslEmpty })
 	}
 
 	private fun parseFunctionDeclaration(ctx: FunctionDeclarationContext, errorHandler: ParseErrorHandler, currentScope: DslScope) {

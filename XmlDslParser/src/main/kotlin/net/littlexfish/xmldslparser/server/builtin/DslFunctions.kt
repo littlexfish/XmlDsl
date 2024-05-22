@@ -222,6 +222,32 @@ object FormatFunc : DslFunction(listOf("value", "format"), null) {
 	}
 }
 
+object ToListFunc : DslFunction(listOf("value"), null) {
+	override fun invoke(param: Map<String, DslValue>, processOption: ProcessOption,
+		errorHandler: ParseErrorHandler, currentElement: DslElement, currentScope: DslScope): DslValue {
+		return when(val value = param["value"]!!) {
+			is DslList -> value
+			is DslSet -> DslList(value.value.toList())
+			is DslDict -> value.toPairList()
+			is DslNull, is DslEmpty -> DslList(emptyList())
+			else -> DslList(listOf(value))
+		}
+	}
+}
+
+object ToSetFunc : DslFunction(listOf("value"), null) {
+	override fun invoke(param: Map<String, DslValue>, processOption: ProcessOption,
+		errorHandler: ParseErrorHandler, currentElement: DslElement, currentScope: DslScope): DslValue {
+		return when(val value = param["value"]!!) {
+			is DslList -> DslSet(value.value.toSet())
+			is DslSet -> value
+			is DslDict -> DslSet(value.toPairList().value.toSet())
+			is DslNull, is DslEmpty -> DslSet(emptySet())
+			else -> DslSet(setOf(value))
+		}
+	}
+}
+
 // math
 
 private fun requireNumber(value: DslValue?): DslNumber {
