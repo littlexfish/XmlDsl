@@ -34,10 +34,8 @@ class DslFieldNotInitializedException(symbol: Token?, name: String) :
 	DslParseException(symbol, symbol, "Field \"$name\" not initialized")
 class DslNonLoopJumpException(symbol: Token) :
 	DslParseException(symbol, symbol, "Cannot do ${symbol.text} operation outside of loop")
-class DslListAccessException(beginSymbol: Token?, endSymbol: Token, val gotType: DslValueType) :
-	DslParseException(beginSymbol, endSymbol, "Access list content must use number as index, but got $gotType")
-class DslListIndexOutOfBoundsException(beginSymbol: Token, endSymbol: Token, val index: Int, val size: Int) :
-	DslParseException(beginSymbol, endSymbol, "List index out of bounds: $index, size: $size")
+class DslIndexOutOfBoundsException(beginSymbol: Token, endSymbol: Token, val index: Int, val size: Int) :
+	DslParseException(beginSymbol, endSymbol, "Index out of bounds: $index, size: $size")
 class DslTypeException(beginSymbol: Token, endSymbol: Token, val expectType: DslValueType, val gotType: DslValueType) :
 	DslParseException(beginSymbol, endSymbol, "Expect type $expectType, but got $gotType")
 class DslTypesException(beginSymbol: Token, endSymbol: Token, val expectTypes: Set<DslValueType>, val gotType: DslValueType) :

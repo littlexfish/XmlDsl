@@ -55,6 +55,7 @@ class DslString(val value: String) : DslValue() {
 	override fun hashCode(): Int {
 		return value.hashCode()
 	}
+	operator fun get(index: Int) = DslString(value[index].toString())
 }
 
 class DslBoolean(val value: Boolean) : DslValue() {
@@ -81,6 +82,7 @@ class DslList(val value: List<DslValue>) : DslValue() {
 	override fun hashCode(): Int {
 		return value.hashCode()
 	}
+	operator fun get(index: Int) = value[index]
 }
 
 object DslEmpty : DslValue() {
@@ -207,7 +209,7 @@ class DslType(private val type: DslValueType) : DslValue() {
 	}
 }
 
-class DslSet(private val value: Set<DslValue>) : DslValue() {
+class DslSet(val value: Set<DslValue>) : DslValue() {
 	override fun getType() = DslValueType.Set
 	override fun toString(name: String, option: ProcessOption): String = option.onSetToString(name, value)
 	override fun equals(other: Any?): Boolean {
@@ -220,7 +222,7 @@ class DslSet(private val value: Set<DslValue>) : DslValue() {
 	}
 }
 
-class DslDict(private val value: Map<DslValue, DslValue>) : DslValue() {
+class DslDict(val value: Map<DslValue, DslValue>) : DslValue() {
 	override fun getType() = DslValueType.Dict
 	override fun toString(name: String, option: ProcessOption): String = option.onDictToString(name, value)
 	override fun equals(other: Any?): Boolean {
@@ -232,9 +234,10 @@ class DslDict(private val value: Map<DslValue, DslValue>) : DslValue() {
 		return value.hashCode()
 	}
 	fun toPairList(): DslList = DslList(value.map { DslPair(it.key to it.value) })
+	operator fun get(key: DslValue): DslValue? = value[key]
 }
 
-class DslPair(private val value: Pair<DslValue, DslValue>) : DslValue() {
+class DslPair(val value: Pair<DslValue, DslValue>) : DslValue() {
 	override fun getType() = DslValueType.Pair
 	override fun toString(name: String, option: ProcessOption): String = option.onPairToString(name, value)
 	override fun equals(other: Any?): Boolean {
@@ -243,9 +246,10 @@ class DslPair(private val value: Pair<DslValue, DslValue>) : DslValue() {
 		return value == other.value
 	}
 	override fun hashCode(): Int = value.hashCode()
+	operator fun get(index: Int): DslValue = value.toList()[index]
 }
 
-class DslAny(private val value: DslValue) : DslValue() {
+class DslAny(val value: DslValue) : DslValue() {
 	override fun getType() = value.getType()
 	override fun toString(name: String, option: ProcessOption): String? = value.toString(name, option)
 	override fun equals(other: Any?): Boolean {

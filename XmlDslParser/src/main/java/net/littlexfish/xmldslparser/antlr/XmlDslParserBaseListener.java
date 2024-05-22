@@ -485,13 +485,13 @@ public class XmlDslParserBaseListener implements XmlDslParserListener {
 	 *
 	 * <p>The default implementation does nothing.</p>
 	 */
-	@Override public void enterListAccess(XmlDslParser.ListAccessContext ctx) { }
+	@Override public void enterContentAccess(XmlDslParser.ContentAccessContext ctx) { }
 	/**
 	 * {@inheritDoc}
 	 *
 	 * <p>The default implementation does nothing.</p>
 	 */
-	@Override public void exitListAccess(XmlDslParser.ListAccessContext ctx) { }
+	@Override public void exitContentAccess(XmlDslParser.ContentAccessContext ctx) { }
 	/**
 	 * {@inheritDoc}
 	 *

@@ -398,15 +398,15 @@ public interface XmlDslParserListener extends ParseTreeListener {
 	 */
 	void exitPostfixUnaryOperation(XmlDslParser.PostfixUnaryOperationContext ctx);
 	/**
-	 * Enter a parse tree produced by {@link XmlDslParser#listAccess}.
+	 * Enter a parse tree produced by {@link XmlDslParser#contentAccess}.
 	 * @param ctx the parse tree
 	 */
-	void enterListAccess(XmlDslParser.ListAccessContext ctx);
+	void enterContentAccess(XmlDslParser.ContentAccessContext ctx);
 	/**
-	 * Exit a parse tree produced by {@link XmlDslParser#listAccess}.
+	 * Exit a parse tree produced by {@link XmlDslParser#contentAccess}.
 	 * @param ctx the parse tree
 	 */
-	void exitListAccess(XmlDslParser.ListAccessContext ctx);
+	void exitContentAccess(XmlDslParser.ContentAccessContext ctx);
 	/**
 	 * Enter a parse tree produced by {@link XmlDslParser#functionCall}.
 	 * @param ctx the parse tree

@@ -228,7 +228,7 @@ dictLiteral
 dictEntry
 setLiteral
 postfixUnaryOperation
-listAccess
+contentAccess
 functionCall
 multiplicativeOperation
 additiveOperator

@@ -96,11 +96,14 @@ private fun createGlobalScope(env: Map<String, String?>): DslScope {
 			addGlobalField(type.name.lowercase(), DslType(type))
 		}
 		// pre-defined function
-		addGlobalField("pairOf", PairFunc())
-		addGlobalField("print", PrintFunc())
-		addGlobalField("panic", PanicFunc())
-		addGlobalField("dict2pairs", DictToPairsFunc())
-		addGlobalField("typeOf", TypeOfFunc())
+		addGlobalField("pairOf", PairFunc)
+		addGlobalField("print", PrintFunc)
+		addGlobalField("panic", PanicFunc)
+		addGlobalField("pairs", PairsFunc)
+		addGlobalField("len", LenFunc)
+		addGlobalField("keys", KeysFunc)
+		addGlobalField("values", ValuesFunc)
+		addGlobalField("typeOf", TypeOfFunc)
 		// user field
 		for((key, value) in env) {
 			addGlobalField(key, value?.let { DslString(it) } ?: DslNull)
@@ -195,33 +198,58 @@ object XmlDslParser {
 		val assignment = ctx.assignmentOperator()
 		val expr = parseExpression(ctx.expression(), processOption, errorHandler, currentElement, currentScope)
 		val symbol = ctx.identifier().Identifier().symbol
-		if(ctx.listAccess() != null) {
+		if(ctx.contentAccess() != null) {
 			val left = currentScope.getFieldState(symbol.text, symbol)
-			val dslList = left.value
-			if(dslList !is DslList) {
-				errorHandler.handleException(symbol.text,
-					DslTypeException(symbol, symbol, DslValueType.List, dslList.getType()))
-				return
-			}
-			val ex = ctx.listAccess().expression()
+			val ex = ctx.contentAccess().expression()
 			val listIdx = parseExpression(ex, processOption, errorHandler, currentElement, currentScope)
-			if(listIdx !is DslNumber) {
-				errorHandler.handleException(
-					ex.text, DslListAccessException(
-						ex.start, ex.stop, listIdx.getType()))
-				return
+			when(left.value) {
+				is DslList, is DslString, is DslPair -> {
+					if(listIdx !is DslNumber) {
+						errorHandler.handleException(
+							ex.text, DslTypeException(ex.start, ex.stop, DslValueType.Number,
+								listIdx.getType()))
+						return
+					}
+					val idx = listIdx.value.toInt()
+					val size = when(left.value) {
+						is DslList -> (left.value as DslList).value.size
+						is DslPair -> 2
+						else -> 0
+					}
+					if(idx < 0 || idx >= size) {
+						errorHandler.handleException(
+							ex.text, DslIndexOutOfBoundsException(
+								ex.start, ex.stop, idx, size))
+						return
+					}
+					when(left.value) {
+						is DslList -> {
+							val newList = (left.value as DslList).value.toMutableList()
+							newList[idx] = expr
+							left.forceModify(DslList(newList))
+						}
+						is DslPair -> {
+							var newPair = (left.value as DslPair).value
+							if(idx == 0) newPair = expr to newPair.second
+							else newPair.first to expr
+							left.forceModify(DslPair(newPair))
+						}
+						else -> { /* do nothing */ }
+					}
+				}
+				is DslDict -> {
+					val newDict = (left.value as DslDict).value.toMutableMap()
+					newDict[listIdx] = expr
+					left.forceModify(DslDict(newDict))
+				}
+				else -> {
+					errorHandler.handleException(
+						symbol.text, DslTypesException(ex.start, ex.stop,
+							setOf(DslValueType.List, DslValueType.String, DslValueType.Pair, DslValueType.Dict),
+							left.value.getType()))
+					return
+				}
 			}
-			val idx = listIdx.value.toInt()
-			val list = dslList.value
-			if(idx < 0 || idx >= list.size) {
-				errorHandler.handleException(
-					ex.text, DslListIndexOutOfBoundsException(
-						ex.start, ex.stop, idx, list.size))
-				return
-			}
-			val mut = list.toMutableList()
-			mut[idx] = expr
-			left.forceModify(DslList(mut))
 		}
 		if(assignment.ASSIGNMENT() != null) {
 			try {
@@ -443,14 +471,53 @@ object XmlDslParser {
 		val left = parseRangeExpression(ctx.rangeExpression(0), processOption, errorHandler, currentElement, currentScope)
 		if(ctx.inOperator() != null) {
 			val right = parseRangeExpression(ctx.rangeExpression(1), processOption, errorHandler, currentElement, currentScope)
-			if(right !is DslList) {
-				errorHandler.handleException(ctx.rangeExpression(1).text,
-					DslTypeException(ctx.rangeExpression(1).start, ctx.rangeExpression(1).stop,
-						DslValueType.List, right.getType()))
-				return DslNull
+			return when(right) {
+				is DslList -> {
+					if(ctx.inOperator().IN() != null) {
+						DslBoolean(left in right.value)
+					}
+					else {
+						DslBoolean(left !in right.value)
+					}
+				}
+				is DslSet -> {
+					if(ctx.inOperator().IN() != null) {
+						DslBoolean(left in right.value)
+					}
+					else {
+						DslBoolean(left !in right.value)
+					}
+				}
+				is DslString -> {
+					if(left !is DslString) {
+						errorHandler.handleException(ctx.rangeExpression(0).text,
+							DslTypeException(ctx.rangeExpression(0).start, ctx.rangeExpression(0).stop,
+								DslValueType.String, left.getType()))
+						return DslNull
+					}
+					if(ctx.inOperator().IN() != null) {
+						DslBoolean(left.value in right.value)
+					}
+					else {
+						DslBoolean(left.value !in right.value)
+					}
+				}
+				is DslDict -> {
+					if(ctx.inOperator().IN() != null) {
+						DslBoolean(left in right.value)
+					}
+					else {
+						DslBoolean(left !in right.value)
+					}
+				}
+				else -> {
+					errorHandler.handleException(ctx.rangeExpression(1).text,
+						DslTypesException(ctx.rangeExpression(1).start, ctx.rangeExpression(1).stop,
+							setOf(DslValueType.List, DslValueType.Set, DslValueType.String,
+								DslValueType.Dict), right.getType()))
+					DslNull
+				}
 			}
-			return DslBoolean(if(ctx.inOperator().IN() != null) right.value.contains(left)
-			else !right.value.contains(left))
 		}
 		return left
 	}
@@ -574,34 +641,52 @@ object XmlDslParser {
 	                                        errorHandler: ParseErrorHandler, currentElement: DslElement, currentScope: DslScope): DslValue {
 		val atomic = parseAtomicExpression(ctx.atomicExpression(), processOption, errorHandler, currentElement, currentScope)
 		ctx.postfixUnaryOperation()?.let { c ->
-			c.listAccess()?.let { l ->
-				if(atomic !is DslList) {
-					errorHandler.handleException(
-						ctx.postfixUnaryOperation().text,
-						DslTypeException(ctx.start, ctx.stop,
-							DslValueType.List, atomic.getType()))
-					return DslNull
-				}
+			c.contentAccess()?.let { l ->
 				val expr = l.expression()
 				val listIdx = parseExpression(expr, processOption, errorHandler, currentElement, currentScope)
-				if(listIdx !is DslNumber) {
-					errorHandler.handleException(
-						expr.text,
-						DslListAccessException(
-							expr.start, expr.stop,
-							listIdx.getType()))
-					return DslNull
+				when(atomic) {
+					is DslList, is DslString, is DslPair -> {
+						if(listIdx !is DslNumber) {
+							errorHandler.handleException(
+								expr.text,
+								DslTypeException(
+									expr.start, expr.stop, DslValueType.Number,
+									listIdx.getType()))
+							return DslNull
+						}
+						val idx = listIdx.value.toInt()
+						val size = when(atomic) {
+							is DslList -> atomic.value.size
+							is DslString -> atomic.value.length
+							is DslPair -> 2
+							else -> 0
+						}
+						if(idx < 0 || idx >= size) {
+							errorHandler.handleException(
+								expr.text,
+								DslIndexOutOfBoundsException(
+									expr.start, expr.stop,
+									idx, size))
+							return DslNull
+						}
+						return when(atomic) {
+							is DslList -> atomic[idx]
+							is DslString -> atomic[idx]
+							is DslPair -> atomic[idx]
+							else -> DslNull
+						}
+					}
+					is DslDict -> {
+						return atomic[listIdx] ?: DslNull
+					}
+					else -> {
+						errorHandler.handleException(
+							ctx.postfixUnaryOperation().text,
+							DslTypesException(ctx.start, ctx.stop,
+								setOf(DslValueType.List, DslValueType.Dict, DslValueType.String, DslValueType.Pair), atomic.getType()))
+						return DslNull
+					}
 				}
-				val idx = listIdx.value.toInt()
-				val list = atomic.value
-				if(idx < 0 || idx >= list.size) {
-					errorHandler.handleException(expr.text,
-						DslListIndexOutOfBoundsException(
-							expr.start, expr.stop,
-							idx, list.size))
-					return DslNull
-				}
-				return list[idx]
 			}
 			c.functionCall()?.let {
 				try {
@@ -826,7 +911,27 @@ private object DslOperation {
 				is DslList -> DslList(left.value + right.value)
 				else -> DslList(left.value + right)
 			}
+			is DslDict -> when(right) {
+				is DslDict -> DslDict(left.value + right.value)
+				is DslNull, is DslEmpty -> left
+				is DslPair -> DslDict(left.value + mapOf(right.value))
+				else -> throw DslValueOperationException(operationSymbol, "+", left, right)
+			}
+			is DslSet -> when(right) {
+				is DslSet -> DslSet(left.value + right.value)
+				is DslNull, is DslEmpty -> left
+				else -> DslSet(left.value + right)
+			}
+			is DslPair -> when(right) {
+				is DslPair -> DslDict(mapOf(left.value, right.value))
+				is DslDict -> DslDict(mapOf(left.value) + right.value)
+				else -> throw DslValueOperationException(operationSymbol, "+", left, right)
+			}
 			is DslEmpty -> right
+			is DslAny -> when(right) {
+				is DslAny -> tryDoPlus(left.value, operationSymbol, right.value, processOption)
+				else -> tryDoPlus(left.value, operationSymbol, right, processOption)
+			}
 			else -> throw DslValueOperationException(operationSymbol, "+", left, right)
 		}
 	}
@@ -844,11 +949,25 @@ private object DslOperation {
 				is DslEmpty, is DslNull -> left
 				else -> DslList(left.value - right)
 			}
+			is DslDict -> when(right) {
+				is DslDict -> DslDict(left.value - right.value.keys)
+				is DslEmpty, is DslNull -> left
+				else -> DslDict(left.value - right)
+			}
+			is DslSet -> when(right) {
+				is DslSet -> DslSet(left.value - right.value)
+				is DslEmpty, is DslNull -> left
+				else -> DslSet(left.value - right)
+			}
 			is DslEmpty -> when(right) {
 				is DslNumber -> DslNumber(-right.value)
 				is DslBoolean -> DslNumber(if (right.value) -1.0 else -0.0)
 				is DslEmpty -> left
 				else -> throw DslValueOperationException(operationSymbol, "-", left, right)
+			}
+			is DslAny -> when(right) {
+				is DslAny -> tryDoMinus(left.value, operationSymbol, right.value)
+				else -> tryDoMinus(left.value, operationSymbol, right)
 			}
 			else -> throw DslValueOperationException(operationSymbol, "-", left, right)
 		}
@@ -862,6 +981,10 @@ private object DslOperation {
 				is DslEmpty -> left
 				else -> throw DslValueOperationException(operationSymbol, "*", left, right)
 			}
+			is DslAny -> when(right) {
+				is DslAny -> tryDoTimes(left.value, operationSymbol, right.value)
+				else -> tryDoTimes(left.value, operationSymbol, right)
+			}
 			else -> throw DslValueOperationException(operationSymbol, "*", left, right)
 		}
 	}
@@ -874,6 +997,10 @@ private object DslOperation {
 				is DslEmpty -> left
 				else -> throw DslValueOperationException(operationSymbol, "/", left, right)
 			}
+			is DslAny -> when(right) {
+				is DslAny -> tryDoDiv(left.value, operationSymbol, right.value)
+				else -> tryDoDiv(left.value, operationSymbol, right)
+			}
 			else -> throw DslValueOperationException(operationSymbol, "/", left, right)
 		}
 	}
@@ -885,6 +1012,10 @@ private object DslOperation {
 				is DslBoolean -> DslNumber(left.value % if(right.value) 1.0 else 0.0)
 				is DslEmpty -> left
 				else -> throw DslValueOperationException(operationSymbol, "%", left, right)
+			}
+			is DslAny -> when(right) {
+				is DslAny -> tryDoRem(left.value, operationSymbol, right.value)
+				else -> tryDoRem(left.value, operationSymbol, right)
 			}
 			else -> throw DslValueOperationException(operationSymbol, "%", left, right)
 		}

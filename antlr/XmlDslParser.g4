@@ -47,7 +47,7 @@ propertyDeclaration
 
 assignmentExpression
     : identifier assignmentOperator expression
-    | identifier listAccess assignmentOperator expression
+    | identifier contentAccess assignmentOperator expression
     ;
 
 expression
@@ -187,12 +187,12 @@ setLiteral
     ;
 
 postfixUnaryOperation
-    : listAccess
+    : contentAccess
     | functionCall
 //    | NL* DOT postfixUnaryExpression
     ;
 
-listAccess
+contentAccess
     : LSQUARE expression RSQUARE
     ;
 

@@ -45,7 +45,7 @@ public class XmlDslParser extends Parser {
 		RULE_ifExpression = 29, RULE_jumpExpression = 30, RULE_loopExpression = 31, 
 		RULE_forExpression = 32, RULE_whileExpression = 33, RULE_listLiteral = 34, 
 		RULE_dictLiteral = 35, RULE_dictEntry = 36, RULE_setLiteral = 37, RULE_postfixUnaryOperation = 38, 
-		RULE_listAccess = 39, RULE_functionCall = 40, RULE_multiplicativeOperation = 41, 
+		RULE_contentAccess = 39, RULE_functionCall = 40, RULE_multiplicativeOperation = 41, 
 		RULE_additiveOperator = 42, RULE_inOperator = 43, RULE_comparisonOperator = 44, 
 		RULE_equalityOperation = 45, RULE_assignmentOperator = 46, RULE_functionDeclaration = 47, 
 		RULE_functionParameters = 48, RULE_type = 49;
@@ -60,7 +60,7 @@ public class XmlDslParser extends Parser {
 			"literalConstant", "stringLiteral", "stringContent", "stringExpression", 
 			"ifExpression", "jumpExpression", "loopExpression", "forExpression", 
 			"whileExpression", "listLiteral", "dictLiteral", "dictEntry", "setLiteral", 
-			"postfixUnaryOperation", "listAccess", "functionCall", "multiplicativeOperation", 
+			"postfixUnaryOperation", "contentAccess", "functionCall", "multiplicativeOperation", 
 			"additiveOperator", "inOperator", "comparisonOperator", "equalityOperation", 
 			"assignmentOperator", "functionDeclaration", "functionParameters", "type"
 		};
@@ -768,8 +768,8 @@ public class XmlDslParser extends Parser {
 		public ExpressionContext expression() {
 			return getRuleContext(ExpressionContext.class,0);
 		}
-		public ListAccessContext listAccess() {
-			return getRuleContext(ListAccessContext.class,0);
+		public ContentAccessContext contentAccess() {
+			return getRuleContext(ContentAccessContext.class,0);
 		}
 		public AssignmentExpressionContext(ParserRuleContext parent, int invokingState) {
 			super(parent, invokingState);
@@ -809,7 +809,7 @@ public class XmlDslParser extends Parser {
 				setState(180);
 				identifier();
 				setState(181);
-				listAccess();
+				contentAccess();
 				setState(182);
 				assignmentOperator();
 				setState(183);
@@ -3007,8 +3007,8 @@ public class XmlDslParser extends Parser {
 
 	@SuppressWarnings("CheckReturnValue")
 	public static class PostfixUnaryOperationContext extends ParserRuleContext {
-		public ListAccessContext listAccess() {
-			return getRuleContext(ListAccessContext.class,0);
+		public ContentAccessContext contentAccess() {
+			return getRuleContext(ContentAccessContext.class,0);
 		}
 		public FunctionCallContext functionCall() {
 			return getRuleContext(FunctionCallContext.class,0);
@@ -3038,7 +3038,7 @@ public class XmlDslParser extends Parser {
 				enterOuterAlt(_localctx, 1);
 				{
 				setState(504);
-				listAccess();
+				contentAccess();
 				}
 				break;
 			case LPAREN:
@@ -3064,29 +3064,29 @@ public class XmlDslParser extends Parser {
 	}
 
 	@SuppressWarnings("CheckReturnValue")
-	public static class ListAccessContext extends ParserRuleContext {
+	public static class ContentAccessContext extends ParserRuleContext {
 		public TerminalNode LSQUARE() { return getToken(XmlDslParser.LSQUARE, 0); }
 		public ExpressionContext expression() {
 			return getRuleContext(ExpressionContext.class,0);
 		}
 		public TerminalNode RSQUARE() { return getToken(XmlDslParser.RSQUARE, 0); }
-		public ListAccessContext(ParserRuleContext parent, int invokingState) {
+		public ContentAccessContext(ParserRuleContext parent, int invokingState) {
 			super(parent, invokingState);
 		}
-		@Override public int getRuleIndex() { return RULE_listAccess; }
+		@Override public int getRuleIndex() { return RULE_contentAccess; }
 		@Override
 		public void enterRule(ParseTreeListener listener) {
-			if ( listener instanceof XmlDslParserListener ) ((XmlDslParserListener)listener).enterListAccess(this);
+			if ( listener instanceof XmlDslParserListener ) ((XmlDslParserListener)listener).enterContentAccess(this);
 		}
 		@Override
 		public void exitRule(ParseTreeListener listener) {
-			if ( listener instanceof XmlDslParserListener ) ((XmlDslParserListener)listener).exitListAccess(this);
+			if ( listener instanceof XmlDslParserListener ) ((XmlDslParserListener)listener).exitContentAccess(this);
 		}
 	}
 
-	public final ListAccessContext listAccess() throws RecognitionException {
-		ListAccessContext _localctx = new ListAccessContext(_ctx, getState());
-		enterRule(_localctx, 78, RULE_listAccess);
+	public final ContentAccessContext contentAccess() throws RecognitionException {
+		ContentAccessContext _localctx = new ContentAccessContext(_ctx, getState());
+		enterRule(_localctx, 78, RULE_contentAccess);
 		try {
 			enterOuterAlt(_localctx, 1);
 			{
