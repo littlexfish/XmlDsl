@@ -42,6 +42,8 @@ class DslNumber(val value: Double) : DslValue() {
 	override fun hashCode(): Int {
 		return value.hashCode()
 	}
+	fun isInt() = value % 1 == 0.0
+	fun isNotInt() = !isInt()
 }
 
 class DslString(val value: String) : DslValue() {

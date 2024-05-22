@@ -91,6 +91,7 @@ private fun createGlobalScope(env: Map<String, String?>): DslScope {
 		addGlobalField("USER_NAME", DslString(System.getProperty("user.name")))
 		addGlobalField("USER_HOME", DslString(System.getProperty("user.home")))
 		addGlobalField("DIR", DslString(System.getProperty("user.dir")))
+		addGlobalField("PI", DslNumber(Math.PI))
 		// type field, to prevent code be detected as identifier
 		for(type in DslValueType.entries) {
 			addGlobalField(type.name.lowercase(), DslType(type))
@@ -104,6 +105,35 @@ private fun createGlobalScope(env: Map<String, String?>): DslScope {
 		addGlobalField("keys", KeysFunc)
 		addGlobalField("values", ValuesFunc)
 		addGlobalField("typeOf", TypeOfFunc)
+		addGlobalField("indexOf", IndexOfFunc)
+		addGlobalField("toInt", ToIntFunc)
+		addGlobalField("toString", ToStringFunc)
+		addGlobalField("format", FormatFunc)
+		addGlobalField("join", JoinFunc)
+		addGlobalField("split", SplitFunc)
+		addGlobalField("replace", ReplaceFunc)
+		addGlobalField("trim", TrimFunc)
+		addGlobalField("lower", LowerFunc)
+		addGlobalField("upper", UpperFunc)
+		addGlobalField("floor", FloorFunc)
+		addGlobalField("ceil", CeilFunc)
+		addGlobalField("round", RoundFunc)
+		addGlobalField("abs", AbsFunc)
+		addGlobalField("sqrt", SqrtFunc)
+		addGlobalField("pow", PowFunc)
+		addGlobalField("toRad", ToRadFunc)
+		addGlobalField("toDeg", ToDegFunc)
+		addGlobalField("sin", SinFunc)
+		addGlobalField("cos", CosFunc)
+		addGlobalField("tan", TanFunc)
+		addGlobalField("asin", AsinFunc)
+		addGlobalField("acos", AcosFunc)
+		addGlobalField("atan", AtanFunc)
+		addGlobalField("log", LogFunc)
+		addGlobalField("log10", Log10Func)
+		addGlobalField("exp", ExpFunc)
+		addGlobalField("random", RandomFunc)
+		addGlobalField("randomRange", RandomRangeFunc)
 		// user field
 		for((key, value) in env) {
 			addGlobalField(key, value?.let { DslString(it) } ?: DslNull)
@@ -208,6 +238,11 @@ object XmlDslParser {
 						errorHandler.handleException(
 							ex.text, DslTypeException(ex.start, ex.stop, DslValueType.Number,
 								listIdx.getType()))
+						return
+					}
+					if(listIdx.isNotInt()) {
+						errorHandler.handleException(
+							ex.text, DslNumberNotIntegerException(ex.start, ex.stop, listIdx.value))
 						return
 					}
 					val idx = listIdx.value.toInt()
@@ -527,13 +562,28 @@ object XmlDslParser {
 		val left = parseAdditiveExpression(ctx.additiveExpression(0), processOption, errorHandler, currentElement, currentScope)
 		if(ctx.RANGE() != null) {
 			val right = parseAdditiveExpression(ctx.additiveExpression(1), processOption, errorHandler, currentElement, currentScope)
-			if(left !is DslNumber || right !is DslNumber) {
-				val idx = if(left !is DslNumber) 0 else 1
-				val text = ctx.additiveExpression(idx).text
-				val start = ctx.additiveExpression(idx).start
-				val stop = ctx.additiveExpression(idx).stop
-				errorHandler.handleException(text,
-					DslTypeException(start, stop, DslValueType.Number, left.getType()))
+			if(left !is DslNumber) {
+				val le = ctx.additiveExpression(0)
+				errorHandler.handleException(le.text,
+					DslTypeException(le.start, le.stop, DslValueType.Number, left.getType()))
+				return DslNull
+			}
+			if(right !is DslNumber) {
+				val re = ctx.additiveExpression(1)
+				errorHandler.handleException(re.text,
+					DslTypeException(re.start, re.stop, DslValueType.Number, right.getType()))
+				return DslNull
+			}
+			if(left.isNotInt()) {
+				val le = ctx.additiveExpression(0)
+				errorHandler.handleException(le.text,
+					DslNumberNotIntegerException(le.start, le.stop, left.value))
+				return DslNull
+			}
+			if(right.isNotInt()) {
+				val re = ctx.additiveExpression(1)
+				errorHandler.handleException(re.text,
+					DslNumberNotIntegerException(re.start, re.stop, right.value))
 				return DslNull
 			}
 			val begin = left.value.toInt()
@@ -652,6 +702,12 @@ object XmlDslParser {
 								DslTypeException(
 									expr.start, expr.stop, DslValueType.Number,
 									listIdx.getType()))
+							return DslNull
+						}
+						if(listIdx.isNotInt()) {
+							errorHandler.handleException(
+								expr.text, DslNumberNotIntegerException(
+									expr.start, expr.stop, listIdx.value))
 							return DslNull
 						}
 						val idx = listIdx.value.toInt()
@@ -809,9 +865,9 @@ object XmlDslParser {
 		ctx.stringContent().forEach {
 			sb.append(parseStringContent(it, processOption, errorHandler, currentElement, currentScope))
 		}
-		var ret = sb.toString().trim()
+		var ret = sb.toString()
 		val lines = ret.lines()
-		ret = lines.joinToString("<br>") { it.trim() }
+		ret = lines.joinToString("<br>")
 		return DslString(ret)
 	}
 
@@ -843,11 +899,11 @@ object XmlDslParser {
 		ctx.StrRef()?.let {
 			val symbol = it.symbol
 			val field = currentScope.getField(symbol.text.substring(1), symbol)
-			return field.toString(symbol.text, processOption) ?: "null"
+			return field.toString(symbol.text, processOption) ?: "<null>"
 		}
 		ctx.stringExpression()?.let {
 			val expr = parseStringExpression(it, processOption, errorHandler, currentElement, currentScope)
-			return expr.toString("", processOption) ?: "null"
+			return expr.toString("", processOption) ?: "<null>"
 		}
 		return "" // here should not be reached
 	}

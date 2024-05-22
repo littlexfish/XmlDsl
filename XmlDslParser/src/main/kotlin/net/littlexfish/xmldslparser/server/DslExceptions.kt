@@ -46,4 +46,5 @@ class DslDuplicateParameterException(symbol: Token, val name: String) :
 	DslParseException(symbol, symbol, "Duplicate parameter \"$name\"")
 class DslPanicException(val msg: String) :
 	DslParseException(null, null, msg)
-
+class DslNumberNotIntegerException(beginSymbol: Token, endSymbol: Token, val value: Double) :
+	DslParseException(beginSymbol, endSymbol, "Expect integer, but got $value")

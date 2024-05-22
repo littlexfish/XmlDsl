@@ -93,6 +93,7 @@ LINE_SEPARATOR // Line separator
 USER_NAME // User name
 USER_HOME // User home
 DIR // Current directory
+PI // PI number
 number // Number type
 string // String type
 boolean // Boolean type
@@ -110,5 +111,38 @@ any // Any type
 pairOf(0, 1) // create a pair
 print("print something") // print something
 // panic("panic") // panic
-dict2pairs({"a": 1, "b": 2}) // dict to pair list
+pairs({"a": 1, "b": 2}) // dict to pair list
+len([1, 2, 3]) // get length of something
+keys({"a": 1, "b": 2}) // key set
+values({"a": 1, "b": 2}) // value list
 typeOf(a) // get type of something
+indexOf([1, 2, 3], 2) // get index of something
+toInt(5.235) // convert to int
+toString(true) // convert to string
+format("format %s", "string") // format string
+join([1, 2, 3], ", ") // join list
+split("1, 2, 3", ", ") // split string
+replace("1, 2, 3", ", ", " ") // replace string
+trim(" 1, 2, 3 ") // trim string
+lower("ABC") // lower string
+upper("abc") // upper string
+floor(5.235) // floor number
+ceil(5.235) // ceil number
+round(5.235) // round number
+abs(-5.235) // abs number
+sqrt(25) // sqrt number
+pow(2, 3) // pow number
+toRad(30) // to rad number
+toDeg(PI) // to deg number
+sin(toRad(30)) // sin number
+cos(toRad(60)) // cos number
+tan(toRad(45)) // tan number
+asin(0.5) // asin number
+acos(0.5) // acos number
+atan(1) // atan number
+log(10, 2) // log number
+log10(10) // log10 number
+exp(2) // exp number
+random() // random number
+randomRange(1, 5) // random range number
+
