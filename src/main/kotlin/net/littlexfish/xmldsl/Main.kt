@@ -8,6 +8,7 @@ import net.littlexfish.xmldslparser.server.ProcessOption
 import java.io.*
 import java.nio.charset.Charset
 import kotlin.collections.HashMap
+import kotlin.math.floor
 
 fun main(args: Array<String>) {
 	val settings = parseArgs(args) ?: return
@@ -94,7 +95,7 @@ private fun argEquals(current: String, vararg arg: String): Boolean {
 			arg.any { it == current }
 		}
 		else {
-			arg.map { it.substring(1) }.any { it == sub }
+			sub.map { it.toString() }.any { "-$it" in arg }
 		}
 	}
 	if(current.startsWith("+")) {
@@ -119,29 +120,43 @@ private fun getArgValue(args: Array<String>, arg: String, idx: Int): String {
 	throw IllegalArgumentException("Argument $arg requires a value")
 }
 
+private fun printSingleOption(msg: String, vararg options: String) {
+	val tabCount = 10
+	print("  ")
+	val s = options.joinToString(", ").length
+	print(options.joinToString(", ") { "\u001b[1;32m$it\u001b[0m" })
+	print("\t".repeat(tabCount - floor((s + 2) / 4.0).toInt() + 1))
+	println(msg)
+}
+
+private fun printSingleExample(after: String) {
+	print("  java -jar xml-dsl.jar ")
+	println("\u001B[1;32m$after\u001B[0m")
+}
+
 private fun printHelp() {
 	println("\u001b[1mUsage:\u001b[0m java -jar xml-dsl.jar [options] <input-file>")
 	println()
 	println("\u001b[1mOptions:\u001b[0m")
-	println("  \u001b[1;32m-h, --help\u001b[0m                     Print this help message and exit")
-	println("  \u001b[1;32m-v, --version\u001b[0m                  Print the version information and exit")
-	println("  \u001b[1;32m-o, --output <directory>\u001b[0m       Specify the output directory for files (default is the input file's directory)")
-	println("  \u001b[1;32m--\u001b[0m                             Specify input from terminal or via pipeline")
-	println("  \u001b[1;32m++\u001b[0m                             Specify output to terminal or via pipeline")
-	println("  \u001b[1;32m--pretty-print\u001b[0m                 Output in pretty print format")
-	println("  \u001b[1;32m--shorten-empty\u001b[0m                Use short form for empty elements")
-	println("  \u001b[1;32m--input-charset <charset>\u001b[0m      Specify input character set (default is UTF-8)")
-	println("  \u001b[1;32m--output-charset <charset>\u001b[0m     Specify output character set (default is UTF-8)")
-	println("  \u001b[1;32m--indent <string>\u001b[0m              Specify the string used for indentation (default is \\t)")
-	println("  \u001b[1;32m--mode <mode>\u001b[0m                  Specify the output parsing mode (default is xml, can be xml or html)")
-	println("  \u001b[1;32m-e, --env <key=value>\u001b[0m          Add a global environment variable")
-	println("  \u001b[1;32m<input-file>\u001b[0m                   The input file to be processed")
+	printSingleOption("Print this help message and exit", "-h", "--help")
+	printSingleOption("Print the version information and exit", "-v", "--version")
+	printSingleOption("Specify the output directory for files (default is the input file's directory)", "-o  <directory>", "--output <directory>")
+	printSingleOption("Specify input from terminal or via pipeline", "++")
+	printSingleOption("Specify output to terminal or via pipeline", "--")
+	printSingleOption("Output in pretty print format", "-p", "--pretty-print")
+	printSingleOption("Use short form for empty elements", "-s", "--shorten-empty")
+	printSingleOption("Specify input character set (default is UTF-8)", "-I <charset>", "--input-charset <charset>")
+	printSingleOption("Specify output character set (default is UTF-8)", "-O <charset>", "--output-charset <charset>")
+	printSingleOption("Specify the string used for indentation (default is \\t)", "-i", "--indent <string>")
+	printSingleOption("Specify the output parsing mode (default is xml, can be xml or html)", "-m <mode>", "--mode <mode>")
+	printSingleOption("Add a global environment variable", "-e <key=value>", "--env <key=value>")
+	printSingleOption("The input file to be processed", "<input-file>")
 	println()
 	println("\u001b[1mExamples:\u001b[0m")
-	println("  java -jar xml-dsl.jar \u001b[1;32m-h\u001b[0m")
-	println("  java -jar xml-dsl.jar \u001b[1;32m--version\u001b[0m")
-	println("  java -jar xml-dsl.jar \u001b[1;32m-o ./output-dir --input-charset UTF-16 --output-charset UTF-16 --indent \"  \" input.xml\u001b[0m")
-	println("  java -jar xml-dsl.jar \u001b[1;32m-o ./output-dir --output-charset UTF-16 --mode html input.html\u001b[0m")
+	printSingleExample("-h")
+	printSingleExample("--version")
+	printSingleExample("-o ./output-dir --input-charset UTF-16 --output-charset UTF-16 --indent \"  \" input.xml")
+	printSingleExample("-o ./output-dir --output-charset UTF-16 --mode html input.html")
 }
 
 private const val SETTINGS_OUTPUT = "output"
@@ -196,13 +211,13 @@ private fun parseArgs(args: Array<String>): HashMap<String, Any?>? {
 			argEquals(arg, "++") -> {
 				settings[SETTINGS_TERMINAL_OUTPUT] = true
 			}
-			argEquals(arg, "--pretty-print") -> {
+			argEquals(arg, "-p", "--pretty-print") -> {
 				settings[SETTINGS_PRETTY_PRINT] = true
 			}
-			argEquals(arg, "--shorten-empty") -> {
+			argEquals(arg, "-s", "--shorten-empty") -> {
 				settings[SETTINGS_SHORTEN_EMPTY] = true
 			}
-			argEquals(arg, "--input-charset") -> {
+			argEquals(arg, "-I", "--input-charset") -> {
 				val charset = getArgValue(args, arg, idx)
 				if(!Charset.isSupported(charset)) {
 					throw IllegalArgumentException("Charset $charset is not supported")
@@ -210,7 +225,7 @@ private fun parseArgs(args: Array<String>): HashMap<String, Any?>? {
 				settings[SETTINGS_INPUT_CHARSET] = Charset.forName(charset)
 				idx++
 			}
-			argEquals(arg, "--output-charset") -> {
+			argEquals(arg, "-O", "--output-charset") -> {
 				val charset = getArgValue(args, arg, idx)
 				if(!Charset.isSupported(charset)) {
 					throw IllegalArgumentException("Charset $charset is not supported")
@@ -218,7 +233,7 @@ private fun parseArgs(args: Array<String>): HashMap<String, Any?>? {
 				settings[SETTINGS_OUTPUT_CHARSET] = Charset.forName(charset)
 				idx++
 			}
-			argEquals(arg, "--indent") -> {
+			argEquals(arg, "-i", "--indent") -> {
 				settings[SETTINGS_INDENT] = getArgValue(args, arg, idx)
 					.replace("\\t", "\t")
 					.replace("\\n", "\n")
@@ -237,7 +252,7 @@ private fun parseArgs(args: Array<String>): HashMap<String, Any?>? {
 				settings[SETTINGS_ENV] = map
 				idx++
 			}
-			argEquals(arg, "--mode") -> {
+			argEquals(arg, "-m", "--mode") -> {
 				settings[SETTINGS_MODE] = getArgValue(args, arg, idx)
 				idx++
 			}
