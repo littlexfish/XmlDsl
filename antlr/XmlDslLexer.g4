@@ -121,7 +121,8 @@ fragment BinDigit: [01];
 
 BooleanLiteral: 'true' | 'false';
 NullLiteral: 'null';
-Identifier: (Letter | '_') (Letter | [_\-.] | DecDigit)*;
+Identifier: (Letter | '_') (Letter | '_' | DecDigit)*;
+FullIdentifier: '`' (Letter | '_') (Letter | [_\-.:] | DecDigit)* '`';
 
 fragment EscapeSeq: UniCharacterLiteral | EscapedIdentifier;
 fragment UniCharacterLiteral: '\\' 'u' HexDigit HexDigit HexDigit HexDigit;

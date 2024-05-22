@@ -20,6 +20,9 @@ elem { // create a element
     a // use variable a
     b // use variable b
 }
+`ele:m` {
+    "content"
+} // create a element with special name
 
 /* function */
 // create a function

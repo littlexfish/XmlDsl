@@ -19,6 +19,7 @@ elementDeclaration
 
 identifier
     : Identifier
+    | FullIdentifier
     ;
 
 block

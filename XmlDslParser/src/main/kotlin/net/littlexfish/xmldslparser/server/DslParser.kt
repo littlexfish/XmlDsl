@@ -197,20 +197,22 @@ object XmlDslParser {
 	                             currentElement: DslElement, currentScope: DslScope) {
 		ctx.propertyDeclaration()?.let {
 			val state = it.dslFieldModifierState()
-			val symbol = it.identifier().Identifier().symbol
+			val id = parseIdentifier(it.identifier())
+			val symbol = id.first
+			val name = id.second
 			try {
-				currentScope.defineField(symbol.text, symbol, DslFieldModifiers(state))
+				currentScope.defineField(name, symbol, DslFieldModifiers(state))
 			}
 			catch(e: DslParseException) {
-				errorHandler.handleException(symbol.text, e)
+				errorHandler.handleException(name, e)
 			}
 			if(it.ASSIGNMENT() != null) {
 				val expr = parseExpression(it.expression(), processOption, errorHandler, currentElement, currentScope)
 				try {
-					currentScope.trySetField(symbol.text, symbol, it.expression().start, it.expression().stop, expr)
+					currentScope.trySetField(name, symbol, it.expression().start, it.expression().stop, expr)
 				}
 				catch(e: DslParseException) {
-					errorHandler.handleException(symbol.text, e)
+					errorHandler.handleException(name, e)
 				}
 			}
 		}
@@ -229,9 +231,11 @@ object XmlDslParser {
 	                                      errorHandler: ParseErrorHandler, currentElement: DslElement, currentScope: DslScope) {
 		val assignment = ctx.assignmentOperator()
 		val expr = parseExpression(ctx.expression(), processOption, errorHandler, currentElement, currentScope)
-		val symbol = ctx.identifier().Identifier().symbol
+		val id = parseIdentifier(ctx.identifier())
+		val symbol = id.first
+		val name = id.second
 		if(ctx.contentAccess() != null) {
-			val left = currentScope.getFieldState(symbol.text, symbol)
+			val left = currentScope.getFieldState(name, symbol)
 			val ex = ctx.contentAccess().expression()
 			val listIdx = parseExpression(ex, processOption, errorHandler, currentElement, currentScope)
 			when(left.value) {
@@ -281,7 +285,7 @@ object XmlDslParser {
 				}
 				else -> {
 					errorHandler.handleException(
-						symbol.text, DslTypesException(ex.start, ex.stop,
+						name, DslTypesException(ex.start, ex.stop,
 							setOf(DslValueType.List, DslValueType.String, DslValueType.Pair, DslValueType.Dict),
 							left.value.getType()))
 					return
@@ -290,16 +294,16 @@ object XmlDslParser {
 		}
 		if(assignment.ASSIGNMENT() != null) {
 			try {
-				currentScope.trySetField(symbol.text, symbol, ctx.expression().start, ctx.expression().stop, expr)
+				currentScope.trySetField(name, symbol, ctx.expression().start, ctx.expression().stop, expr)
 			}
 			catch(e: DslParseException) {
-				errorHandler.handleException(symbol.text, e)
+				errorHandler.handleException(name, e)
 			}
 		}
 		else {
-			val originalValue = currentScope.getField(symbol.text, symbol)
+			val originalValue = currentScope.getField(name, symbol)
 			try {
-				currentScope.trySetField(symbol.text, symbol, ctx.expression().start,
+				currentScope.trySetField(name, symbol, ctx.expression().start,
 					ctx.expression().stop, when(assignment.text) {
 						"+=" -> DslOperation.tryDoPlus(originalValue, assignment.ADD_ASSIGNMENT().symbol, expr, processOption)
 						"-=" -> DslOperation.tryDoMinus(originalValue, assignment.SUB_ASSIGNMENT().symbol, expr)
@@ -310,7 +314,7 @@ object XmlDslParser {
 				})
 			}
 			catch(e: DslParseException) {
-				errorHandler.handleException(symbol.text, e)
+				errorHandler.handleException(name, e)
 			}
 		}
 	}
@@ -382,19 +386,21 @@ object XmlDslParser {
 					DslValueType.List, expr.getType()))
 			return
 		}
-		val id = ctx.identifier().Identifier().symbol
+		val id = parseIdentifier(ctx.identifier())
+		val symbol = id.first
+		val name = id.second
 		for(dslValue in expr.value) {
 			val subScope = DslScope(currentScope, setOf(JumpType.Next::class.java,
 				JumpType.Break::class.java, JumpType.Continue::class.java))
-			subScope.defineField(id.text, id, DslFieldModifiers(DslFieldModifiers.FieldState.Block))
-			subScope.trySetField(id.text, id, ctx.expression().start, ctx.expression().stop, dslValue)
+			subScope.defineField(name, symbol, DslFieldModifiers(DslFieldModifiers.FieldState.Block))
+			subScope.trySetField(name, symbol, ctx.expression().start, ctx.expression().stop, dslValue)
 			if(parseBlock(ctx.block(), processOption, errorHandler, currentElement, subScope) == JumpType.Break) break
 		}
 	}
 
 	private fun parseElementDeclaration(ctx: ElementDeclarationContext, processOption: ProcessOption,
 	                                    errorHandler: ParseErrorHandler, currentScope: DslScope): DslElement {
-		val name = ctx.identifier().Identifier().symbol.text
+		val name = parseIdentifier(ctx.identifier()).second
 		val subScope = DslScope(currentScope)
 		val element = DslElement(name, subScope)
 		parseBlock(ctx.block(), processOption, errorHandler, element, subScope)
@@ -796,12 +802,14 @@ object XmlDslParser {
 			return DslSet(set)
 		}
 		ctx.identifier()?.let {
-			val symbol = it.Identifier().symbol
+			val id = parseIdentifier(it)
+			val symbol = id.first
+			val name = id.second
 			try {
-				return currentScope.getField(symbol.text, symbol)
+				return currentScope.getField(name, symbol)
 			}
 			catch(e: DslParseException) {
-				errorHandler.handleException(symbol.text, e)
+				errorHandler.handleException(name, e)
 			}
 		}
 		ctx.type()?.let {
@@ -925,8 +933,9 @@ object XmlDslParser {
 	}
 
 	private fun parseFunctionDeclaration(ctx: FunctionDeclarationContext, errorHandler: ParseErrorHandler, currentScope: DslScope) {
-		val symbol = ctx.identifier().Identifier().symbol
-		val name = symbol.text
+		val id = parseIdentifier(ctx.identifier())
+		val symbol = id.first
+		val name = id.second
 		try {
 			currentScope.defineField(name, symbol, DslFieldModifiers(DslFieldModifiers.FieldState.Block))
 		}
@@ -934,17 +943,22 @@ object XmlDslParser {
 			errorHandler.handleException(name, e)
 			return
 		}
-		val params = ctx.functionParameters().identifier().map { it.Identifier().symbol }
+		val params = ctx.functionParameters().identifier().map { parseIdentifier(it) }
 		val pSet = mutableSetOf<String>()
 		for(p in params) {
-			if(!pSet.add(p.text)) {
-				errorHandler.handleException(p.text, DslDuplicateParameterException(p, p.text))
+			if(!pSet.add(p.second)) {
+				errorHandler.handleException(p.second, DslDuplicateParameterException(p.first, p.second))
 			}
 		}
 		if(params.size != pSet.size) return
 		val block = ctx.block()
-		val func = DslFunction(params.map { it.text }, block)
+		val func = DslFunction(params.map { it.second }, block)
 		currentScope.trySetField(name, symbol, ctx.start, ctx.stop, func)
+	}
+
+	private fun parseIdentifier(ctx: IdentifierContext): Pair<Token, String> {
+		return ctx.Identifier()?.symbol?.let { it to it.text } ?:
+			ctx.FullIdentifier().let { it.symbol to it.text.substring(1..<it.text.length - 1) }
 	}
 
 }
