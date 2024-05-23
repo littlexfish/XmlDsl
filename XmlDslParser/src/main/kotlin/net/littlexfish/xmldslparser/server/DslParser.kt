@@ -380,16 +380,20 @@ object XmlDslParser {
 	                               errorHandler: ParseErrorHandler, currentElement: DslElement,
 	                               currentScope: DslScope) {
 		val expr = parseExpression(ctx.expression(), processOption, errorHandler, currentElement, currentScope)
-		if(expr !is DslList) {
-			errorHandler.handleException(ctx.FOR().symbol.text,
-				DslTypeException(ctx.expression().start, ctx.expression().stop,
-					DslValueType.List, expr.getType()))
-			return
-		}
 		val id = parseIdentifier(ctx.identifier())
 		val symbol = id.first
 		val name = id.second
-		for(dslValue in expr.value) {
+		val list = when(expr) {
+			is DslList -> expr
+			is DslDict -> expr.toPairList()
+			else -> {
+				errorHandler.handleException(ctx.FOR().symbol.text,
+					DslTypeException(ctx.expression().start, ctx.expression().stop,
+						DslValueType.List, expr.getType()))
+				return
+			}
+		}
+		for(dslValue in list.value) {
 			val subScope = DslScope(currentScope, setOf(JumpType.Next::class.java,
 				JumpType.Break::class.java, JumpType.Continue::class.java))
 			subScope.defineField(name, symbol, DslFieldModifiers(DslFieldModifiers.FieldState.Block))
