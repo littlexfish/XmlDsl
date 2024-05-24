@@ -1,6 +1,6 @@
 # XmlDsl
 
-![Version](https://img.shields.io/badge/version-0.1.1--beta-0074d9)
+![Version](https://img.shields.io/badge/version-0.1.2--beta-0074d9)
 
 A simple DSL for XML.
 
