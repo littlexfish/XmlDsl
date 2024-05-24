@@ -240,7 +240,7 @@ object XmlDslParser {
 			val left = currentScope.getFieldState(name, symbol)
 			val ex = ctx.contentAccess().expression()
 			val listIdx = parseExpression(ex, processOption, errorHandler, currentElement, currentScope)
-			when(left.value) {
+			when(left.getValue(symbol)) {
 				is DslList, is DslString, is DslPair -> {
 					if(listIdx !is DslNumber) {
 						errorHandler.handleException(
@@ -254,8 +254,8 @@ object XmlDslParser {
 						return
 					}
 					val idx = listIdx.value.toInt()
-					val size = when(left.value) {
-						is DslList -> (left.value as DslList).value.size
+					val size = when(left.getValue(symbol)) {
+						is DslList -> (left.getValue(symbol) as DslList).value.size
 						is DslPair -> 2
 						else -> 0
 					}
@@ -265,14 +265,14 @@ object XmlDslParser {
 								ex.start, ex.stop, idx, size))
 						return
 					}
-					when(left.value) {
+					when(left.getValue(symbol)) {
 						is DslList -> {
-							val newList = (left.value as DslList).value.toMutableList()
+							val newList = (left.getValue(symbol) as DslList).value.toMutableList()
 							newList[idx] = expr
 							left.forceModify(DslList(newList))
 						}
 						is DslPair -> {
-							var newPair = (left.value as DslPair).value
+							var newPair = (left.getValue(symbol) as DslPair).value
 							if(idx == 0) newPair = expr to newPair.second
 							else newPair.first to expr
 							left.forceModify(DslPair(newPair))
@@ -281,7 +281,7 @@ object XmlDslParser {
 					}
 				}
 				is DslDict -> {
-					val newDict = (left.value as DslDict).value.toMutableMap()
+					val newDict = (left.getValue(symbol) as DslDict).value.toMutableMap()
 					newDict[listIdx] = expr
 					left.forceModify(DslDict(newDict))
 				}
@@ -289,7 +289,7 @@ object XmlDslParser {
 					errorHandler.handleException(
 						name, DslTypesException(ex.start, ex.stop,
 							setOf(DslValueType.List, DslValueType.String, DslValueType.Pair, DslValueType.Dict),
-							left.value.getType()))
+							left.getValue(symbol).getType()))
 					return
 				}
 			}

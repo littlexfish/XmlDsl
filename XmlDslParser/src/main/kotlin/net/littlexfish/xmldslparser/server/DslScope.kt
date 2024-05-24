@@ -26,11 +26,11 @@ class DslScope(private val parent: DslScope? = null, private val acceptJumpType:
 	fun defineField(name: String, symbol: Token?, modifiers: DslFieldModifiers) {
 		if(fields.containsKey(name))
 			throw DslFieldAlreadyExistsException(symbol, name)
-		fields[name] = DslValueState(name, symbol, modifiers)
+		fields[name] = DslValueState(name, modifiers)
 	}
 
 	fun getField(name: String, symbol: Token?): DslValue {
-		return getFieldState(name, symbol).value
+		return getFieldState(name, symbol).getValue(symbol)
 	}
 
 	fun getFieldState(name: String, symbol: Token?): DslValueState {

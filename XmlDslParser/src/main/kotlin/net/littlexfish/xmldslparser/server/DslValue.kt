@@ -118,7 +118,14 @@ class DslElement(private val name: String, val scope: DslScope) : DslValue() {
 		val attrs = scope.getFieldStates().filter { it.modifier.isAttribute }
 		return if(attrs.isEmpty()) left
 		else {
-			val attrStr = attrs.mapNotNull { it.value.toXmlAttributeString(it.name, processOption) }
+			val attrStr = attrs.mapNotNull {
+				try {
+					it.getValue(null).toXmlAttributeString(it.name, processOption)
+				}
+				catch(e: DslFieldNotInitializedException) {
+					null
+				}
+			}
 				.joinToString(" ")
 			"$left $attrStr"
 		}
@@ -262,11 +269,9 @@ class DslAny(val value: DslValue) : DslValue() {
 	override fun hashCode(): Int = value.hashCode()
 }
 
-class DslValueState(val name: String, private val defineSymbol: Token?, val modifier: DslFieldModifiers) {
+class DslValueState(val name: String, val modifier: DslFieldModifiers) {
 
 	private var pValue: DslValue? = null
-	val value: DslValue
-		get() = pValue ?: throw DslFieldNotInitializedException(defineSymbol, name)
 
 	internal fun tryModify(value: DslValue): Boolean {
 		if(this.pValue == null || modifier.canModify) {
@@ -279,5 +284,7 @@ class DslValueState(val name: String, private val defineSymbol: Token?, val modi
 	internal fun forceModify(value: DslValue) {
 		this.pValue = value
 	}
+
+	fun getValue(symbol: Token?) = pValue ?: throw DslFieldNotInitializedException(symbol, name)
 
 }
