@@ -1,8 +1,6 @@
 # XmlDsl
 
-![Build](https://img.shields.io/badge/build-passing-2ecc40)
-![Coverage](https://img.shields.io/badge/coverage-71%25-ff851b)
-![Version](https://img.shields.io/badge/version-0.1.0-0074d9)
+![Version](https://img.shields.io/badge/version-0.1.1--beta-0074d9)
 
 A simple DSL for XML.
 
@@ -25,9 +23,7 @@ If you want to convert to HTML instead, add `--mode html` to the command.
 java -jar XmlDsl.jar --pretty-print --shorten-empty --mode html -o output/ example.xd
 ```
 
-## Development
-
-For developers who want to contribute to the project, please visit the [Development Page](docs/development/en/index.md).
+## [Wiki](https://github.com/littlexfish/XmlDsl/wiki)
 
 ## Language and Frameworks
 
@@ -44,5 +40,4 @@ The project uses the following dependencies:
 - [ANTLR](https://www.antlr.org/): Generated parser
 - [JUnit](https://junit.org/): Unit testing
 
-WIP
 
