@@ -3,7 +3,7 @@ plugins {
 }
 
 group = "net.littlexfish"
-version = "0.1.1-beta"
+version = "0.1.2-beta"
 
 repositories {
     mavenCentral()
