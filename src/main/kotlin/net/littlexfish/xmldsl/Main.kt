@@ -8,7 +8,6 @@ import net.littlexfish.xmldslparser.server.ProcessOption
 import java.io.*
 import java.nio.charset.Charset
 import kotlin.collections.HashMap
-import kotlin.math.floor
 
 fun main(args: Array<String>) {
 	val settings = parseArgs(args) ?: return
@@ -64,7 +63,7 @@ fun main(args: Array<String>) {
 			println(baos.toString(outputCharset))
 		}
 		else {
-			val out = FileOutputStream(File(output, "output.xml"))
+			val out = FileOutputStream(File(output, "output.${if(mode?.equals("html", true) == true) "html" else "xml"}"))
 			parse(source, out, option, processOption, env = env)
 			out.close()
 		}
