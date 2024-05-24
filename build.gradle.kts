@@ -3,7 +3,7 @@ plugins {
 }
 
 group = "net.littlexfish"
-version = "1.0-SNAPSHOT"
+version = "0.1.0"
 
 repositories {
     mavenCentral()
@@ -20,4 +20,17 @@ tasks.test {
 }
 kotlin {
     jvmToolchain(17)
+}
+tasks.jar {
+    manifest {
+        attributes["Main-Class"] = "net.littlexfish.xmldsl.MainKt"
+    }
+    dependsOn(configurations.compileClasspath)
+    from({
+        configurations.compileClasspath.get().filter {
+            it.name.endsWith("jar")
+        }.map { zipTree(it) }
+    }) {
+        exclude("META-INF/*.RSA", "META-INF/*.SF", "META-INF/*.DSA")
+    }
 }
