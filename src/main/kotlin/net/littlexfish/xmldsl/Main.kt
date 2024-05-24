@@ -121,26 +121,30 @@ private fun getArgValue(args: Array<String>, arg: String, idx: Int): String {
 }
 
 private fun printSingleOption(msg: String, vararg options: String) {
-	val tabCount = 10
+	val spaceCount = 30
 	print("  ")
-	val s = options.joinToString(", ").length
+	val s = options.joinToString(", ").length + 2
 	print(options.joinToString(", ") { "\u001b[1;32m$it\u001b[0m" })
-	print("\t".repeat(tabCount - floor((s + 2) / 4.0).toInt() + 1))
+	if(s > spaceCount) {
+		println()
+		print(" ".repeat(spaceCount))
+	}
+	else print(" ".repeat(spaceCount - s))
 	println(msg)
 }
 
 private fun printSingleExample(after: String) {
-	print("  java -jar xml-dsl.jar ")
+	print("  java -jar XmlDsl.jar ")
 	println("\u001B[1;32m$after\u001B[0m")
 }
 
 private fun printHelp() {
-	println("\u001b[1mUsage:\u001b[0m java -jar xml-dsl.jar [options] <input-file>")
+	println("\u001b[1mUsage:\u001b[0m java -jar XmlDsl.jar [options] <input-file>")
 	println()
 	println("\u001b[1mOptions:\u001b[0m")
 	printSingleOption("Print this help message and exit", "-h", "--help")
 	printSingleOption("Print the version information and exit", "-v", "--version")
-	printSingleOption("Specify the output directory for files (default is the input file's directory)", "-o  <directory>", "--output <directory>")
+	printSingleOption("Specify the output directory for files (default is the first input file's directory)", "-o  <directory>", "--output <directory>")
 	printSingleOption("Specify input from terminal or via pipeline", "++")
 	printSingleOption("Specify output to terminal or via pipeline", "--")
 	printSingleOption("Output in pretty print format", "-p", "--pretty-print")
