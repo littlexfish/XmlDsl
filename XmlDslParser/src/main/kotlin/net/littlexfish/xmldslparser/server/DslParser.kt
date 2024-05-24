@@ -197,22 +197,24 @@ object XmlDslParser {
 	                             currentElement: DslElement, currentScope: DslScope) {
 		ctx.propertyDeclaration()?.let {
 			val state = it.dslFieldModifierState()
-			val id = parseIdentifier(it.identifier())
-			val symbol = id.first
-			val name = id.second
-			try {
-				currentScope.defineField(name, symbol, DslFieldModifiers(state))
-			}
-			catch(e: DslParseException) {
-				errorHandler.handleException(name, e)
-			}
-			if(it.ASSIGNMENT() != null) {
-				val expr = parseExpression(it.expression(), processOption, errorHandler, currentElement, currentScope)
+			for(p in it.singlePropertyDecl()) {
+				val id = parseIdentifier(p.identifier())
+				val symbol = id.first
+				val name = id.second
 				try {
-					currentScope.trySetField(name, symbol, it.expression().start, it.expression().stop, expr)
+					currentScope.defineField(name, symbol, DslFieldModifiers(state))
 				}
 				catch(e: DslParseException) {
 					errorHandler.handleException(name, e)
+				}
+				if(p.ASSIGNMENT() != null) {
+					val expr = parseExpression(p.expression(), processOption, errorHandler, currentElement, currentScope)
+					try {
+						currentScope.trySetField(name, symbol, p.expression().start, p.expression().stop, expr)
+					}
+					catch(e: DslParseException) {
+						errorHandler.handleException(name, e)
+					}
 				}
 			}
 		}

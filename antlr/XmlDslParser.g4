@@ -43,7 +43,11 @@ declaration
     ;
 
 propertyDeclaration
-    : (VAL | VAR | ATTR) NL* identifier (NL* ASSIGNMENT NL* expression)?
+    : (VAL | VAR | ATTR) NL* singlePropertyDecl (COMMA singlePropertyDecl)*
+    ;
+
+singlePropertyDecl
+    : identifier (NL* ASSIGNMENT NL* expression)?
     ;
 
 assignmentExpression

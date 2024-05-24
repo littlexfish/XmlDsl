@@ -59,6 +59,7 @@ a <= 3 // less or equal
 val m = 0 // immutable
 var n = 0 // mutable
 attr o = 0 // attribute & mutable
+val p = "1", q = 1 // multiple definition
 
 // assign
 n = "1"

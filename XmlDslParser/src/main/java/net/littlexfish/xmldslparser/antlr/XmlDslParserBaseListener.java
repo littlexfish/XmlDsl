@@ -125,6 +125,18 @@ public class XmlDslParserBaseListener implements XmlDslParserListener {
 	 *
 	 * <p>The default implementation does nothing.</p>
 	 */
+	@Override public void enterSinglePropertyDecl(XmlDslParser.SinglePropertyDeclContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
+	@Override public void exitSinglePropertyDecl(XmlDslParser.SinglePropertyDeclContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
 	@Override public void enterAssignmentExpression(XmlDslParser.AssignmentExpressionContext ctx) { }
 	/**
 	 * {@inheritDoc}

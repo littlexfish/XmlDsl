@@ -98,6 +98,16 @@ public interface XmlDslParserListener extends ParseTreeListener {
 	 */
 	void exitPropertyDeclaration(XmlDslParser.PropertyDeclarationContext ctx);
 	/**
+	 * Enter a parse tree produced by {@link XmlDslParser#singlePropertyDecl}.
+	 * @param ctx the parse tree
+	 */
+	void enterSinglePropertyDecl(XmlDslParser.SinglePropertyDeclContext ctx);
+	/**
+	 * Exit a parse tree produced by {@link XmlDslParser#singlePropertyDecl}.
+	 * @param ctx the parse tree
+	 */
+	void exitSinglePropertyDecl(XmlDslParser.SinglePropertyDeclContext ctx);
+	/**
 	 * Enter a parse tree produced by {@link XmlDslParser#assignmentExpression}.
 	 * @param ctx the parse tree
 	 */
