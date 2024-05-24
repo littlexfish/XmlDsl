@@ -16,13 +16,13 @@ Write a file called `example.xd` then use the following command
 to convert it to XML into output/example.xml.
 
 ```shell
-java -jar xml-dsl.jar --pretty-print --shorten-empty -o output/ example.xd
+java -jar XmlDsl.jar --pretty-print --shorten-empty -o output/ example.xd
 ```
 
 If you want to convert to HTML instead, add `--mode html` to the command.
 
 ```shell
-java -jar xml-dsl.jar --pretty-print --shorten-empty --mode html -o output/ example.xd
+java -jar XmlDsl.jar --pretty-print --shorten-empty --mode html -o output/ example.xd
 ```
 
 ## Development
