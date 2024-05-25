@@ -8,6 +8,7 @@
 	</head>
 	<body>
 		<link rel="stylesheet" href="./index.css" />
+		<script src="./index.js" defer></script>
 		<header>
 			<h1>XmlDsl</h1>
 			<div class="icon-container">
@@ -19,110 +20,39 @@
 			</div>
 		</header>
 		<div id="content">
-			<h2>Description</h2>
-			<p>
-				XmlDsl is a simple and lightweight tool that generates XML and HTML
-				documents using a domain-specific language (DSL). It offers a set of
-				syntax rules to easily define elements and attributes.
-			</p>
-			<h2>Examples:</h2>
-			<div class="code-examples">
-				<div class="code-block">
-					<pre class="code-normal">
-<span class="code-element">ele</span>&nbsp;{<br>
-	<span class="code-element">ele</span>&nbsp;{}<br>
-	<span class="code-element">values</span>&nbsp;{<br>
-		<span class="code-keyword">for</span>&nbsp;<span class="code-field">i</span>&nbsp;<span class="code-keyword">in</span>&nbsp;<span class="code-number">0</span>..<span class="code-number">10</span>&nbsp;{<br>
-			<span class="code-element">value</span>&nbsp;{<br>
-				<span class="code-field">i</span><br>
-			}<br>
-		}<br>
-	}<br>
-}
-					</pre>
-				</div>
-				<span class="home-text055">˃</span>
-				<div class="code-block">
-					<pre class="code-normal">
-<span class="code-element">&lt;ele&gt;</span><br>
-	<span class="code-element">&lt;ele&gt;</span><br>
-	<span class="code-element">&lt;/ele&gt;</span><br>
-	<span class="code-element">&lt;values&gt;</span><br>
-		<span class="code-element">&lt;value&gt;</span><br>
-			0<br>
-		<span class="code-element">&lt;/value&gt;</span><br>
-		<span class="code-element">&lt;value&gt;</span><br>
-			1<br>
-		<span class="code-element">&lt;/value&gt;</span><br>
-		<span class="code-element">&lt;value&gt;</span><br>
-			2<br>
-		<span class="code-element">&lt;/value&gt;</span><br>
-		<span class="code-element">&lt;value&gt;</span><br>
-			3<br>
-		<span class="code-element">&lt;/value&gt;</span><br>
-		<span class="code-element">&lt;value&gt;</span><br>
-			4<br>
-		<span class="code-element">&lt;/value&gt;</span><br>
-		<span class="code-element">&lt;value&gt;</span><br>
-			5<br>
-		<span class="code-element">&lt;/value&gt;</span><br>
-		<span class="code-element">&lt;value&gt;</span><br>
-			6<br>
-		<span class="code-element">&lt;/value&gt;</span><br>
-		<span class="code-element">&lt;value&gt;</span><br>
-			7<br>
-		<span class="code-element">&lt;/value&gt;</span><br>
-		<span class="code-element">&lt;value&gt;</span><br>
-			8<br>
-		<span class="code-element">&lt;/value&gt;</span><br>
-		<span class="code-element">&lt;value&gt;</span><br>
-			9<br>
-		<span class="code-element">&lt;/value&gt;</span><br>
-	<span class="code-element">&lt;/values&gt;</span><br>
-<span class="code-element">&lt;/ele&gt;</span><br>
-						</pre>
+			<div>
+				<h2>Description</h2>
+				<p>
+					XmlDsl is a simple and lightweight tool that generates XML and HTML
+					documents using a domain-specific language (DSL). It offers a set of
+					syntax rules to easily define elements and attributes.
+				</p>
+				<h2>Examples:</h2>
+				<div class="code-examples">
+					<div class="tabs">
+						<div id="example1_tab_dsl" class="tab active" onclick="switch_example_1('dsl')">DSL</div>
+						<div id="example1_tab_xml" class="tab" onclick="switch_example_1('xml')">XML</div>
+					</div>
+					<div class="code-block">
+						<pre id="example1" class="code-normal"></pre>
 					</div>
 				</div>
-			<div class="code-examples">
-				<div class="code-block">
-					<pre class="code-normal">
-<span class="code-element">html</span> {<br>
-	<span class="code-element">head</span> {<br>
-		<span class="code-element">title</span> {<br>
-			<span class="code-string">"Title"</span><br>
-		}<br>
-	}<br>
-	<span class="code-element">body</span> {<br>
-		<span class="code-keyword">attr</span> <span class="code-field">style</span> = { <span class="code-string">'margin'</span>: <span class="code-string">'none'</span>, <span class="code-string">'background'</span>: <span class="code-string">'darkgray'</span> }<br>
-		<span class="code-field">style</span> += <span class="code-function">pairOf</span>(<span class="code-string">'color'</span>, <span class="code-string">'white'</span>)<br>
-		<span class="code-element">h1 </span>{<br>
-			<span class="code-keyword">attr </span><span class="code-field">style</span> = <span class="code-string">'color: white'</span><br>
-			<span class="code-string">"Hello, World"</span><br>
-		}<br>
-		<span class="code-string">"Hello, XmlDsl"</span><br>
-	}<br>
-<span>}</span>
-					</pre>
+				<div class="code-examples">
+					<div class="tabs">
+						<div id="example2_tab_dsl" class="tab active" onclick="switch_example_2('dsl')">DSL</div>
+						<div id="example2_tab_html" class="tab" onclick="switch_example_2('html')">HTML</div>
+					</div>
+					<div class="code-block">
+						<pre id="example2" class="code-normal"></pre>
+					</div>
 				</div>
-				<span>˃</span>
-				<div class="code-block">
-					<pre class="code-normal">
-<span class="code-element">&lt;html&gt;</span><br>
-	<span class="code-element">&lt;head&gt;</span><br>
-		<span class="code-element">&lt;title&gt;</span><br>
-			Title<br>
-		<span class="code-element">&lt;/title&gt;</span><br>
-	<span class="code-element">&lt;/head&gt;</span><br>
-	<span class="code-element">&lt;body</span> <span class="code-field">style</span>=<span class="code-string">"margin: none; background: darkgray; color: white"</span><span class="code-element">&gt;</span><br>
-		<span class="code-element">&lt;h1</span> <span class="code-field">style</span>=<span class="code-string">"color: white"</span><span class="code-element">&gt;</span><br>
-			Hello, World<br>
-		<span class="code-element">&lt;/h1&gt;</span><br>
-		Hello, XmlDsl<br>
-	<span class="code-element">&lt;/body&gt;</span><br>
-<span class="code-element">&lt;/html&gt;</span><br>
-					</pre>
-				</div>
+				<h2>Release:</h2>
+				<h4>Latest: <a href="https://github.com/littlexfish/XmlDsl/releases/tag/0.1.2-beta">0.1.2-beta</a></h4>
+				<h4>
+					<a href="https://github.com/littlexfish/XmlDsl/releases">Other versions</a>
+				</h4>
 			</div>
+			<footer></footer>
 		</div>
 	</body>
 </html>
