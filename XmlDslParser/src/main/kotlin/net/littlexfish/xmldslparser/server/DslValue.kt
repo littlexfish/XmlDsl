@@ -2,7 +2,7 @@ package net.littlexfish.xmldslparser.server
 
 import net.littlexfish.xmldslparser.antlr.XmlDslParser.BlockContext
 import org.antlr.v4.runtime.Token
-import java.io.OutputStream
+import javax.xml.stream.XMLStreamWriter
 
 sealed class DslValue {
 
@@ -13,14 +13,14 @@ sealed class DslValue {
 	abstract override fun equals(other: Any?): Boolean
 	abstract override fun hashCode(): Int
 
-	fun toXml(option: ParseOption, processOption: ProcessOption, outputStream: OutputStream) {
-		pToXml(option, processOption, outputStream, 0)
+	fun toXml(option: ParseOption, processOption: ProcessOption, writer: XMLStreamWriter) {
+		pToXml(option, processOption, writer, 0)
 	}
 
-	internal open fun pToXml(option: ParseOption, processOption: ProcessOption, outputStream: OutputStream, indentLevel: Int) {
+	internal open fun pToXml(option: ParseOption, processOption: ProcessOption, writer: XMLStreamWriter, indentLevel: Int) {
 		val str = toString("", processOption) ?: return
-		if(option.prettyPrint) outputStream.write(option.indent.repeat(indentLevel).toByteArray(option.charset))
-		outputStream.write(str.toByteArray(option.charset))
+		if(option.prettyPrint) writer.writeCharacters(option.indent.repeat(indentLevel))
+		writer.writeCharacters(str)
 	}
 
 	fun toXmlAttributeString(name: String, option: ProcessOption): String? {
@@ -113,45 +113,25 @@ class DslElement(private val name: String, val scope: DslScope) : DslValue() {
 		if(value != DslNull) elements.add(value)
 	}
 
-	private fun getBeginTagLeft(processOption: ProcessOption): String {
-		val left = "<$name"
-		val attrs = scope.getFieldStates().filter { it.modifier.isAttribute }
-		return if(attrs.isEmpty()) left
-		else {
-			val attrStr = attrs.mapNotNull {
-				try {
-					it.getValue(null).toXmlAttributeString(it.name, processOption)
-				}
-				catch(e: DslFieldNotInitializedException) {
-					null
-				}
-			}
-				.joinToString(" ")
-			"$left $attrStr"
-		}
-	}
-
-	private fun getEndTag() = "</$name>"
-
-	override fun pToXml(option: ParseOption, processOption: ProcessOption, outputStream: OutputStream, indentLevel: Int) {
+	override fun pToXml(option: ParseOption, processOption: ProcessOption, writer: XMLStreamWriter, indentLevel: Int) {
 		if(option.shortenEmpty && elements.isEmpty()) {
-			if(option.prettyPrint) outputStream.write(option.indent.repeat(indentLevel).toByteArray(option.charset))
-			outputStream.write((getBeginTagLeft(processOption) + " />").toByteArray(option.charset))
+			if(option.prettyPrint) writer.writeCharacters(option.indent.repeat(indentLevel))
+			writer.writeEmptyElement(name)
 			return
 		}
-		if(option.prettyPrint) outputStream.write(option.indent.repeat(indentLevel).toByteArray(option.charset))
-		outputStream.write((getBeginTagLeft(processOption) + ">").toByteArray(option.charset))
+		if(option.prettyPrint) writer.writeCharacters(option.indent.repeat(indentLevel))
+		writer.writeStartElement(name)
 		if(elements.isNotEmpty()) {
 			for(ele in elements) {
-				if(option.prettyPrint) outputStream.write(System.lineSeparator().toByteArray(option.charset))
-				ele.pToXml(option, processOption, outputStream, indentLevel + 1)
+				if(option.prettyPrint) writer.writeCharacters(System.lineSeparator())
+				ele.pToXml(option, processOption, writer, indentLevel + 1)
 			}
 		}
 		if(option.prettyPrint && option.endTagNewLine) {
-			outputStream.write(System.lineSeparator().toByteArray(option.charset))
-			outputStream.write(option.indent.repeat(indentLevel).toByteArray(option.charset))
+			writer.writeCharacters(System.lineSeparator())
+			writer.writeCharacters(option.indent.repeat(indentLevel))
 		}
-		outputStream.write(getEndTag().toByteArray(option.charset))
+		writer.writeEndElement()
 	}
 
 	override fun getType() = DslValueType.Element

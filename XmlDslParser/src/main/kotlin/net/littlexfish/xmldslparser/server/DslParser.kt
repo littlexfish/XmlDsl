@@ -7,6 +7,7 @@ import org.antlr.v4.runtime.Token
 import java.io.File
 import java.io.OutputStream
 import java.nio.charset.Charset
+import javax.xml.stream.XMLOutputFactory
 
 data class ParseOption(
 	val prettyPrint: Boolean = false,
@@ -155,9 +156,11 @@ class XmlDsl(private val processOption: ProcessOption, env: Map<String, String?>
 		get() = root.scope
 
 	fun toXml(option: ParseOption, outputStream: OutputStream) {
+		val factory = XMLOutputFactory.newInstance()
+		val writer = factory.createXMLStreamWriter(outputStream, option.charset.name())
 		for(ele in root.elements) {
-			ele.toXml(option, processOption, outputStream)
-			if(option.prettyPrint) outputStream.write(System.lineSeparator().toByteArray(option.charset))
+			ele.toXml(option, processOption, writer)
+			if(option.prettyPrint) writer.writeCharacters(System.lineSeparator())
 		}
 	}
 
