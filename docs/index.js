@@ -11,7 +11,6 @@ function switch_example(self, idx) {
         c.classList.remove("active");
     }
     code.children[idx].classList.add("active");
-    resetCopyAnimation(tab.parentElement.querySelector(".copy .copy-button"));
 }
 
 function copy(copyIcon) {
