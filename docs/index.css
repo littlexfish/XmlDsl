@@ -18,8 +18,8 @@ h1 {
 h2 {
 	margin: 0;
 }
-h2 + p {
-	margin-left: 8px;
+.code {
+	display: none;
 }
 .code-element {
 	color: #ff82eaff;
@@ -46,7 +46,7 @@ h2 + p {
 	background: #147487
 }
 .code-block {
-	width: 100%;
+	width: calc(100% - 32px);
 	height: 300px;
 	display: inline-block;
 	padding: 0 16px;
@@ -57,7 +57,7 @@ h2 + p {
 	tab-size: 4;
 	margin: 0;
 	border: var(--color-primary) 1px solid;
-	list-style: none;
+	position: relative;
 }
 .code-block > li {
 	display: block;
@@ -86,13 +86,14 @@ h2 + p {
 }
 .code-examples {
 	height: 300px;
-	width: calc(100% - 32px);
+	width: calc(100%);
 	display: flex;
 	margin: 16px 0;
 	flex-direction: column;
 	justify-content: start;
 	align-items: start;
 	font-family: "monospace";
+	position: relative;
 }
 .code-examples > span {
 	font-size: 72px;
@@ -196,6 +197,7 @@ header svg:active {
 	border-radius: 8px 8px 0 0;
 	border: var(--color-primary) 1px solid;
 	border-bottom: none;
+	cursor: pointer;
 }
 .tabs .tab.active {
 	background: var(--color-primary);
@@ -216,4 +218,34 @@ footer {
 }
 h4 {
 	margin: 8px 0 0 8px;
+}
+.code.active {
+	font-family: "monospace";
+	color: #dcdcdcff;
+	display: block;
+}
+.copy {
+	position: absolute;
+	float: right;
+	display: flex;
+	right: 16px;
+	top: calc(32px + 1em);
+	width: 32px;
+	height: 32px;
+	padding: 4px;
+	border-radius: 32px;
+	z-index: 5;
+}
+.copy:hover {
+	background: #FFFFFF10;
+	cursor: pointer;
+}
+#content .block {
+	display: block;
+	position: relative;
+	margin: 0;
+	padding: 16px 16px 0 16px;
+}
+.block .content {
+	margin-left: 8px;
 }
