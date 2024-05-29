@@ -3,7 +3,7 @@ plugins {
 }
 
 group = "net.littlexfish"
-version = "0.1.3-beta"
+version = "0.2.0-beta"
 
 repositories {
     mavenCentral()
@@ -22,15 +22,17 @@ kotlin {
     jvmToolchain(17)
 }
 tasks.register<Copy>("generateVersion") {
-    from("src/main/kotlin/net/littlexfish/xmldslparser/Lib.kt") {
-        filter { line ->
-            if (line.startsWith("const val version = ")) {
-                return@filter "const val version = \"$version\""
+    copy {
+        from("src/main/kotlin/net/littlexfish/xmldslparser/Lib.kt") {
+            filter { line ->
+                if (line.startsWith("const val version = ")) {
+                    return@filter "const val version = \"$version\""
+                }
+                return@filter line
             }
-            return@filter line
         }
+        into("build/generated/auto/")
     }
-    into("build/generated/auto/")
     copy {
         from("build/generated/auto/Lib.kt")
         into("src/main/kotlin/net/littlexfish/xmldslparser")
