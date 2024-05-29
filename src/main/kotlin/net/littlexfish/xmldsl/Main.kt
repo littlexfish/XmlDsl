@@ -51,6 +51,51 @@ fun main(args: Array<String>) {
 		mode?.equals("html", true) == true -> HtmlProcessOption
 		else -> ProcessOption()
 	}
+	if(settings[SETTINGS_DUMP_TOKENS] as? Boolean == true) {
+		for(input in inputs) {
+			val p = input.path
+			print("\u001B[1;32m")
+			println(p)
+			print("=".repeat(p.length))
+			println("\u001B[0m")
+			val source = FileDslSource(input.absolutePath, inputCharset)
+			val tokens = tokens(source)
+			for(token in tokens) {
+				println(token)
+			}
+			println()
+		}
+		return
+	}
+
+	val paths = settings[SETTINGS_PATH] as? MutableSet<File> ?: mutableSetOf()
+	for(input in inputs) {
+		paths.add(input.parentFile)
+	}
+
+	if(settings[SETTINGS_DUMP_VAR] as? Boolean == true) {
+		if(userInput) {
+			val bytes = System.`in`.readBytes()
+			val bais = ByteArrayInputStream(bytes)
+			val source = InputStreamDslSource(bais, inputCharset)
+			parseXmlDsl(source, processOption, env = env, paths = paths).getScope().dump()
+		}
+		else {
+			for(input in inputs) {
+				val p = input.path
+				print("\u001B[1;32m")
+				println(p)
+				print("=".repeat(p.length))
+				println("\u001B[0m")
+				val ins = FileInputStream(input)
+				val source = InputStreamDslSource(ins, inputCharset)
+				parseXmlDsl(source, processOption, env = env, paths = paths).getScope().dump()
+				ins.close()
+				println()
+			}
+		}
+		return
+	}
 
 	val option = ParseOption(prettyPrint, indent, shortenEmpty, charset = outputCharset)
 	if(userInput) {
@@ -59,12 +104,12 @@ fun main(args: Array<String>) {
 		val source = InputStreamDslSource(bais, inputCharset)
 		if(terminalOutput) {
 			val baos = ByteArrayOutputStream()
-			parse(source, baos, option, processOption, env = env)
+			parse(source, baos, option, processOption, env = env, paths = paths)
 			println(baos.toString(outputCharset))
 		}
 		else {
 			val out = FileOutputStream(File(output, "output.${if(mode?.equals("html", true) == true) "html" else "xml"}"))
-			parse(source, out, option, processOption, env = env)
+			parse(source, out, option, processOption, env = env, paths = paths)
 			out.close()
 		}
 	}
@@ -74,12 +119,12 @@ fun main(args: Array<String>) {
 			val source = InputStreamDslSource(ins, inputCharset)
 			if(terminalOutput) {
 				val baos = ByteArrayOutputStream()
-				parse(source, baos, option, processOption, env = env)
+				parse(source, baos, option, processOption, env = env, paths = paths)
 				println(baos.toString(outputCharset))
 			}
 			else {
 				val out = FileOutputStream(File(output, input.nameWithoutExtension + ".xml"))
-				parse(source, out, option, processOption, env = env)
+				parse(source, out, option, processOption, env = env, paths = paths)
 				out.close()
 			}
 			ins.close()
@@ -153,6 +198,9 @@ private fun printHelp() {
 	printSingleOption("Specify the string used for indentation (default is \\t)", "-i", "--indent <string>")
 	printSingleOption("Specify the output parsing mode (default is xml, can be xml or html)", "-m <mode>", "--mode <mode>")
 	printSingleOption("Add a global environment variable", "-e <key=value>", "--env <key=value>")
+	printSingleOption("Add import finding path", "-P <path>", "--path <path>")
+	printSingleOption("Dump tokens", "--dump-tokens")
+	printSingleOption("Dump variables", "--dump-var")
 	printSingleOption("The input file to be processed", "<input-file>")
 	println()
 	println("\u001b[1mExamples:\u001b[0m")
@@ -173,6 +221,9 @@ private const val SETTINGS_SHORTEN_EMPTY = "shorten-empty"
 private const val SETTINGS_ENV = "env"
 private const val SETTINGS_NOT_PARAM = "not-param"
 private const val SETTINGS_MODE = "mode"
+private const val SETTINGS_PATH = "path"
+private const val SETTINGS_DUMP_TOKENS = "dump-tokens"
+private const val SETTINGS_DUMP_VAR = "dump-var"
 
 private fun getDefaultSettings(): HashMap<String, Any?> {
 	return hashMapOf(
@@ -187,6 +238,9 @@ private fun getDefaultSettings(): HashMap<String, Any?> {
 		SETTINGS_ENV to mutableMapOf<String, String>(),
 		SETTINGS_NOT_PARAM to mutableListOf<String>(),
 		SETTINGS_MODE to null,
+		SETTINGS_PATH to mutableSetOf<File>(),
+		SETTINGS_DUMP_TOKENS to false,
+		SETTINGS_DUMP_VAR to false,
 	)
 }
 
@@ -257,6 +311,21 @@ private fun parseArgs(args: Array<String>): HashMap<String, Any?>? {
 		if(argEquals(arg, "-m", "--mode")) {
 			settings[SETTINGS_MODE] = getArgValue(args, arg, idx)
 			idx++
+		}
+		if(argEquals(arg, "-P", "--path")) {
+			val list = settings[SETTINGS_PATH] as? MutableSet<File> ?: mutableSetOf()
+			list.addAll(getArgValue(args, arg, idx).split(";").mapNotNull {
+				val file = File(it)
+				if(file.isDirectory) file else null
+			})
+			settings[SETTINGS_PATH] = list
+			idx++
+		}
+		if(argEquals(arg, "--dump-tokens")) {
+			settings[SETTINGS_DUMP_TOKENS] = true
+		}
+		if(argEquals(arg, "--dump-var")) {
+			settings[SETTINGS_DUMP_VAR] = true
 		}
 		if(!arg.startsWith("-")) {
 			val list = settings[SETTINGS_NOT_PARAM] as? MutableList<String> ?: mutableListOf()

@@ -152,3 +152,8 @@ exp(2) // exp number
 random() // random number
 randomRange(1, 5) // random range number
 
+/* import/export */
+export val hi = "hi" // export variable
+import "export.xd" // import file
+
+add(1, 2)

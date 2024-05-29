@@ -71,16 +71,16 @@ TYPE        : 'type';
 SET         : 'set';
 DICT        : 'dict';
 PAIR        : 'pair';
+IMPORT      : 'import';
+EXPORT      : 'export';
 
 /* Keep */
 // Separators & Operators
 ELLIPSIS    : '...';
 // Keywords
-IMPORT      : 'import';
 INCLUDE     : 'include';
 FUN         : 'fun';
 RETURN      : 'return';
-EXPORT      : 'export';
 // Type
 AS          : 'as';
 AS_SAFE     : 'as?';
@@ -202,16 +202,16 @@ Inside_TYPE        : TYPE -> type(TYPE);
 Inside_SET         : SET -> type(SET);
 Inside_DICT        : DICT -> type(DICT);
 Inside_PAIR        : PAIR -> type(PAIR);
+Inside_IMPORT      : IMPORT -> type(IMPORT);
+Inside_EXPORT      : EXPORT -> type(EXPORT);
 
 /* Keep */
 // Separators & Operators
 Inside_ELLIPSIS    : ELLIPSIS -> type(ELLIPSIS);
 // Keywords
-Inside_IMPORT      : IMPORT -> type(IMPORT);
 Inside_INCLUDE     : INCLUDE -> type(INCLUDE);
 Inside_FUN         : FUN -> type(FUN);
 Inside_RETURN      : RETURN -> type(RETURN);
-Inside_EXPORT      : EXPORT -> type(EXPORT);
 // Type
 Inside_AS          : AS -> type(AS);
 Inside_AS_SAFE     : AS_SAFE -> type(AS_SAFE);

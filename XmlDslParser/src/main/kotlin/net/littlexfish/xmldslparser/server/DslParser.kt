@@ -1,6 +1,8 @@
 package net.littlexfish.xmldslparser.server
 
+import net.littlexfish.xmldslparser.FileDslSource
 import net.littlexfish.xmldslparser.antlr.XmlDslParser.*
+import net.littlexfish.xmldslparser.parseXmlDsl
 import net.littlexfish.xmldslparser.server.builtin.*
 import net.littlexfish.xmldslparser.version
 import org.antlr.v4.runtime.Token
@@ -17,32 +19,42 @@ data class ParseOption(
 	val charset: Charset = Charsets.UTF_8,
 )
 
+private fun panic(message: String): Nothing {
+	throw DslPanicException(message)
+}
+
 data class ProcessOption(
-	val onListToString: (String /* name */, List<DslValue> /* list */) -> String = { _, list ->
-		"[${list.mapNotNull { it.toString("", ProcessOption()) }.joinToString(", ")}]"
+	val onListToString: (String /* name */, List<DslValue> /* list */, ProcessOption) -> String = { _, list, option ->
+		"[${list.mapNotNull { it.toString("", option) }.joinToString(", ")}]"
 	},
-	val onPairToString: (String /* name */, Pair<DslValue, DslValue> /* list */) -> String = { _, pair ->
-		"(${pair.first.toString("", ProcessOption())}, ${pair.second.toString("", ProcessOption())})"
+	val onPairToString: (String /* name */, Pair<DslValue, DslValue> /* list */, ProcessOption) -> String = { _, pair, option ->
+		"(${pair.first.toString("", option)}, ${pair.second.toString("", option)})"
 	},
-	val onDictToString: (String /* name */, Map<DslValue, DslValue> /* dict */) -> String = { _, dict ->
-		"{${dict.map { (k, v) -> "${k.toString("", ProcessOption())}: ${v.toString("", ProcessOption())}" }.joinToString(", ")}}"
+	val onDictToString: (String /* name */, Map<DslValue, DslValue> /* dict */, ProcessOption) -> String = { _, dict, option ->
+		"{${dict.map { (k, v) -> "${k.toString("", option)}: ${v.toString("", option)}" }.joinToString(", ")}}"
 	},
-	val onSetToString: (String /* name */, Set<DslValue> /* set */) -> String = { _, set ->
-		"<${set.mapNotNull { it.toString("", ProcessOption()) }.joinToString(", ")}>"
+	val onSetToString: (String /* name */, Set<DslValue> /* set */, ProcessOption) -> String = { _, set, option ->
+		"<${set.mapNotNull { it.toString("", option) }.joinToString(", ")}>"
+	},
+	val onPrint: (DslValue, ProcessOption) -> Unit = { it, option ->
+		println(it.toString("", option))
+	},
+	val onPanic: (DslValue, ProcessOption) -> Unit = { it, option ->
+		panic(it.toString("", option) ?: "<null>")
 	}
 )
 
 val HtmlProcessOption = ProcessOption(
-	onListToString = onListToString@{ name, list ->
+	onListToString = onListToString@{ name, list, _ ->
 		return@onListToString processHtmlToString(name, list, "[%s]")
 	},
-	onDictToString = onDictToString@{ name, dict ->
+	onDictToString = onDictToString@{ name, dict, option ->
 		return@onDictToString when(name) {
-			"style" -> dict.mapNotNull { (k, v) -> "${k.toString("", ProcessOption())}: ${v.toString("", ProcessOption())}" }.joinToString("; ")
-			else -> "{${dict.map { (k, v) -> "${k.toString("", ProcessOption())}: ${v.toString("", ProcessOption())}" }.joinToString(", ")}}"
+			"style" -> dict.mapNotNull { (k, v) -> "${k.toString("", option)}: ${v.toString("", option)}" }.joinToString("; ")
+			else -> "{${dict.map { (k, v) -> "${k.toString("", option)}: ${v.toString("", option)}" }.joinToString(", ")}}"
 		}
 	},
-	onSetToString = onSetToString@{ name, set ->
+	onSetToString = onSetToString@{ name, set, _ ->
 		return@onSetToString processHtmlToString(name, set.toList(), "<%s>")
 	}
 )
@@ -79,8 +91,8 @@ class ParseErrorHandler {
 data class ParseErrorDetail(val text: String, val dslParseException: DslParseException)
 
 
-private fun createGlobalScope(env: Map<String, String?>): DslScope {
-	return DslScope().apply {
+private fun createGlobalScope(env: Map<String, String?>, dsl: XmlDsl): DslScope {
+	return DslScope(dsl = dsl).apply {
 		// pre-defined field
 		addGlobalField("VERSION", DslString(version))
 		addGlobalField("JAVA_VERSION", DslString(System.getProperty("java.version")))
@@ -145,13 +157,13 @@ private fun createGlobalScope(env: Map<String, String?>): DslScope {
 }
 
 private fun DslScope.addGlobalField(name: String, value: DslValue) {
-	defineField(name, null, DslFieldModifiers(DslFieldModifiers.FieldState.Block))
+	defineField(name, null, DslFieldModifiers(DslFieldModifiers.FieldState.Block, false))
 	trySetField(name, null, null, null, value)
 }
 
-class XmlDsl(private val processOption: ProcessOption, env: Map<String, String?>) {
+class XmlDsl(private val processOption: ProcessOption, val env: Map<String, String?>, val paths: Set<File>) {
 
-	internal val root = DslElement("<root>", DslScope(createGlobalScope(env)))
+	internal val root = DslElement("<root>", DslScope(createGlobalScope(env, this)))
 	internal val rootScope: DslScope
 		get() = root.scope
 
@@ -164,40 +176,106 @@ class XmlDsl(private val processOption: ProcessOption, env: Map<String, String?>
 		}
 	}
 
+	fun getScope(): DslScope = rootScope
+
 }
 
 object XmlDslParser {
 
-	fun parseDslFile(ctx: DslFileContext, processOption: ProcessOption, errorHandler: ParseErrorHandler, env: Map<String, String?>): XmlDsl {
-		val root = XmlDsl(processOption, env)
-		parseStatements(ctx.statements(), processOption, errorHandler, root.root, root.rootScope)
+	fun parseDslFile(ctx: DslFileContext, processOption: ProcessOption, errorHandler: ParseErrorHandler, env: Map<String, String?>, paths: Set<File>): XmlDsl {
+		val root = XmlDsl(processOption, env, paths)
+		parseRootStatements(ctx.rootStatements(), processOption, errorHandler, root.root, root.rootScope)
 		return root
+	}
+
+	private fun parseRootStatements(ctx: RootStatementsContext, processOption: ProcessOption, errorHandler: ParseErrorHandler,
+	                                currentElement: DslElement, currentScope: DslScope): JumpType {
+		val stmts = ctx.rootStatement()
+		for(stmt in stmts) {
+			if(stmt.statement() != null) {
+				val jmp = parseStatement(stmt.statement(), processOption, errorHandler, currentElement, currentScope)
+				if(jmp != JumpType.Next) return jmp
+			}
+			else {
+				stmt.exportDeclaration()?.let {
+					parseExportDeclaration(it, processOption, errorHandler, currentElement, currentScope)
+				}
+			}
+		}
+		return JumpType.Next
+	}
+
+	private fun parseExportDeclaration(ctx: ExportDeclarationContext, processOption: ProcessOption, errorHandler: ParseErrorHandler,
+	                                   currentElement: DslElement, currentScope: DslScope) {
+		val exported = ctx.EXPORT() != null
+		ctx.declaration()?.let {
+			parseDeclaration(it, processOption, errorHandler, currentElement, currentScope, exported)
+		}
 	}
 
 	private fun parseStatements(ctx: StatementsContext, processOption: ProcessOption, errorHandler: ParseErrorHandler,
 	                            currentElement: DslElement, currentScope: DslScope): JumpType {
 		val stmts = ctx.statement()
 		for(stmt in stmts) {
-			stmt.declaration()?.let {
-				parseDeclaration(it, processOption, errorHandler, currentElement, currentScope)
-			}
-			stmt.assignmentExpression()?.let {
-				parseAssignmentExpression(it, processOption, errorHandler, currentElement, currentScope)
-			}
-			stmt.expression()?.let {
-				val expr = parseExpression(it, processOption, errorHandler, currentElement, currentScope)
-				currentElement.addValue(expr)
-			}
-			stmt.flowExpression()?.let {
-				val jmp = parseFlowExpression(it, processOption, errorHandler, currentElement, currentScope)
-				if(jmp != JumpType.Next) return jmp
-			}
+			val jmp = parseStatement(stmt, processOption, errorHandler, currentElement, currentScope)
+			if(jmp != JumpType.Next) return jmp
 		}
 		return JumpType.Next
 	}
 
+	private fun parseStatement(ctx: StatementContext, processOption: ProcessOption, errorHandler: ParseErrorHandler,
+	                            currentElement: DslElement, currentScope: DslScope): JumpType {
+		ctx.declaration()?.let {
+			parseDeclaration(it, processOption, errorHandler, currentElement, currentScope)
+		}
+		ctx.assignmentExpression()?.let {
+			parseAssignmentExpression(it, processOption, errorHandler, currentElement, currentScope)
+		}
+		ctx.expression()?.let {
+			val expr = parseExpression(it, processOption, errorHandler, currentElement, currentScope)
+			currentElement.addValue(expr)
+		}
+		ctx.flowExpression()?.let {
+			val jmp = parseFlowExpression(it, processOption, errorHandler, currentElement, currentScope)
+			if(jmp != JumpType.Next) return jmp
+		}
+		ctx.importStatement()?.let {
+			parseImportStatement(it, processOption, errorHandler, currentElement, currentScope)
+		}
+		return JumpType.Next
+	}
+
+	private fun parseImportStatement(ctx: ImportStatementContext, processOption: ProcessOption, errorHandler: ParseErrorHandler,
+	                                 currentElement: DslElement, currentScope: DslScope) {
+		val lit = ctx.stringLiteral()
+		val file = parseStringLiteral(lit, processOption, errorHandler, currentElement, currentScope)
+		if(file !is DslString) {
+			errorHandler.handleException(ctx.IMPORT().symbol.text,
+				DslTypeException(ctx.stringLiteral().start, ctx.stringLiteral().stop,
+					DslValueType.String, file.getType()))
+			return
+		}
+		val paths = currentScope.dsl.paths
+		val f = findFile(file.value, paths)
+		if(f == null) {
+			errorHandler.handleException(lit.text, DslImportNotFoundException(lit.start, lit.stop, file.value))
+			return
+		}
+		val source = FileDslSource(f.absolutePath)
+		val dsl = parseXmlDsl(source, processOption, errorHandler, currentScope.dsl.env, paths)
+		currentScope.importScope(dsl.rootScope, ctx.IMPORT().symbol)
+	}
+
+	private fun findFile(name: String, paths: Set<File>): File? {
+		for(path in paths) {
+			val file = File(path, name)
+			if(file.isFile) return file
+		}
+		return null
+	}
+
 	private fun parseDeclaration(ctx: DeclarationContext, processOption: ProcessOption, errorHandler: ParseErrorHandler,
-	                             currentElement: DslElement, currentScope: DslScope) {
+	                             currentElement: DslElement, currentScope: DslScope, export: Boolean = false) {
 		ctx.propertyDeclaration()?.let {
 			val state = it.dslFieldModifierState()
 			for(p in it.singlePropertyDecl()) {
@@ -205,7 +283,7 @@ object XmlDslParser {
 				val symbol = id.first
 				val name = id.second
 				try {
-					currentScope.defineField(name, symbol, DslFieldModifiers(state))
+					currentScope.defineField(name, symbol, DslFieldModifiers(state, export))
 				}
 				catch(e: DslParseException) {
 					errorHandler.handleException(name, e)
@@ -222,7 +300,7 @@ object XmlDslParser {
 			}
 		}
 		ctx.functionDeclaration()?.let {
-			parseFunctionDeclaration(it, errorHandler, currentScope)
+			parseFunctionDeclaration(it, errorHandler, currentScope, export)
 		}
 	}
 
@@ -941,12 +1019,12 @@ object XmlDslParser {
 		return DslList(list.filter { it != DslNull && it != DslEmpty })
 	}
 
-	private fun parseFunctionDeclaration(ctx: FunctionDeclarationContext, errorHandler: ParseErrorHandler, currentScope: DslScope) {
+	private fun parseFunctionDeclaration(ctx: FunctionDeclarationContext, errorHandler: ParseErrorHandler, currentScope: DslScope, export: Boolean) {
 		val id = parseIdentifier(ctx.identifier())
 		val symbol = id.first
 		val name = id.second
 		try {
-			currentScope.defineField(name, symbol, DslFieldModifiers(DslFieldModifiers.FieldState.Block))
+			currentScope.defineField(name, symbol, DslFieldModifiers(DslFieldModifiers.FieldState.Block, export))
 		}
 		catch(e: DslParseException) {
 			errorHandler.handleException(name, e)

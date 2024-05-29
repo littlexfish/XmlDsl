@@ -15,7 +15,7 @@ object PrintFunc : DslFunction(listOf("value"), null) {
 	override fun invoke(param: Map<String, DslValue>, processOption: ProcessOption,
 		errorHandler: ParseErrorHandler, currentElement: DslElement, currentScope: DslScope): DslValue? {
 		val value = param["value"]!!
-		println(value.toString("", processOption))
+		processOption.onPrint(value, processOption)
 		return null
 	}
 }
@@ -24,7 +24,8 @@ object PanicFunc : DslFunction(listOf("msg"), null) {
 	override fun invoke(param: Map<String, DslValue>, processOption: ProcessOption,
 		errorHandler: ParseErrorHandler, currentElement: DslElement, currentScope: DslScope): DslValue? {
 		val message = param["msg"]!!
-		panic(message.toString("", processOption) ?: "<null>")
+		processOption.onPanic(message, processOption)
+		return null
 	}
 }
 

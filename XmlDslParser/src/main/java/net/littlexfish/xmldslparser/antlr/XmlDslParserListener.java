@@ -18,6 +18,36 @@ public interface XmlDslParserListener extends ParseTreeListener {
 	 */
 	void exitDslFile(XmlDslParser.DslFileContext ctx);
 	/**
+	 * Enter a parse tree produced by {@link XmlDslParser#rootStatements}.
+	 * @param ctx the parse tree
+	 */
+	void enterRootStatements(XmlDslParser.RootStatementsContext ctx);
+	/**
+	 * Exit a parse tree produced by {@link XmlDslParser#rootStatements}.
+	 * @param ctx the parse tree
+	 */
+	void exitRootStatements(XmlDslParser.RootStatementsContext ctx);
+	/**
+	 * Enter a parse tree produced by {@link XmlDslParser#rootStatement}.
+	 * @param ctx the parse tree
+	 */
+	void enterRootStatement(XmlDslParser.RootStatementContext ctx);
+	/**
+	 * Exit a parse tree produced by {@link XmlDslParser#rootStatement}.
+	 * @param ctx the parse tree
+	 */
+	void exitRootStatement(XmlDslParser.RootStatementContext ctx);
+	/**
+	 * Enter a parse tree produced by {@link XmlDslParser#exportDeclaration}.
+	 * @param ctx the parse tree
+	 */
+	void enterExportDeclaration(XmlDslParser.ExportDeclarationContext ctx);
+	/**
+	 * Exit a parse tree produced by {@link XmlDslParser#exportDeclaration}.
+	 * @param ctx the parse tree
+	 */
+	void exitExportDeclaration(XmlDslParser.ExportDeclarationContext ctx);
+	/**
 	 * Enter a parse tree produced by {@link XmlDslParser#anysemi}.
 	 * @param ctx the parse tree
 	 */
@@ -517,4 +547,14 @@ public interface XmlDslParserListener extends ParseTreeListener {
 	 * @param ctx the parse tree
 	 */
 	void exitType(XmlDslParser.TypeContext ctx);
+	/**
+	 * Enter a parse tree produced by {@link XmlDslParser#importStatement}.
+	 * @param ctx the parse tree
+	 */
+	void enterImportStatement(XmlDslParser.ImportStatementContext ctx);
+	/**
+	 * Exit a parse tree produced by {@link XmlDslParser#importStatement}.
+	 * @param ctx the parse tree
+	 */
+	void exitImportStatement(XmlDslParser.ImportStatementContext ctx);
 }

@@ -5,7 +5,20 @@ options {
 }
 
 dslFile
-    : statements EOF
+    : rootStatements EOF
+    ;
+
+rootStatements
+    : anysemi* (rootStatement (anysemi+ rootStatement?)*)
+    ;
+
+rootStatement
+    : statement
+    | exportDeclaration
+    ;
+
+exportDeclaration
+    : EXPORT? NL* declaration
     ;
 
 anysemi
@@ -35,6 +48,7 @@ statement
     | assignmentExpression
     | expression
     | flowExpression
+    | importStatement
     ;
 
 declaration
@@ -247,7 +261,7 @@ functionDeclaration
     ;
 
 functionParameters
-    : LPAREN (identifier (COMMA identifier)* COMMA?)? RPAREN
+    : LPAREN NL* (identifier NL* (COMMA NL* identifier NL*)* COMMA? NL*)? RPAREN
     ;
 
 type
@@ -257,7 +271,9 @@ type
     | DICT | PAIR
     ;
 
-
+importStatement
+    : IMPORT NL* stringLiteral
+    ;
 
 
 

@@ -9,7 +9,7 @@ sealed class JumpType(val name: String) {
 	data class Return(val value: DslValue?) : JumpType("Return")
 }
 
-class DslScope(private val parent: DslScope? = null, private val acceptJumpType: Set<Class<out JumpType>> = setOf(JumpType.Next::class.java)) {
+class DslScope(private val parent: DslScope? = null, private val acceptJumpType: Set<Class<out JumpType>> = setOf(JumpType.Next::class.java), val dsl: XmlDsl = parent!!.dsl) {
 
 	private val fields = HashMap<String, DslValueState>()
 
@@ -42,5 +42,21 @@ class DslScope(private val parent: DslScope? = null, private val acceptJumpType:
 	internal fun getFieldStates() = fields.values
 
 	fun canDoJump(type: Class<out JumpType>) = acceptJumpType.contains(type)
+
+	fun importScope(scope: DslScope, symbol: Token?) {
+		scope.fields.values.forEach {
+			if(it.modifier.isExport) {
+				try {
+					defineField(it.name, symbol, it.modifier.copyWithoutExport())
+					trySetField(it.name, symbol, symbol, symbol, it.getValue(symbol))
+				}
+				catch(ignore: DslParseException) {}
+			}
+		}
+	}
+
+	fun dump() {
+		fields.values.forEach(DslValueState::dump)
+	}
 
 }

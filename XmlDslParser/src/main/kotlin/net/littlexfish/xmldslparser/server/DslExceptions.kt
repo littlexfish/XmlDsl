@@ -48,3 +48,6 @@ class DslPanicException(val msg: String) :
 	DslParseException(null, null, msg)
 class DslNumberNotIntegerException(beginSymbol: Token, endSymbol: Token, val value: Double) :
 	DslParseException(beginSymbol, endSymbol, "Expect integer, but got $value")
+class DslImportNotFoundException(beginSymbol: Token, endSymbol: Token, val file: String) :
+	DslParseException(beginSymbol, endSymbol, "File \"$file\" not found")
+

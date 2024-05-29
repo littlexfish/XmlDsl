@@ -75,7 +75,7 @@ class DslBoolean(val value: Boolean) : DslValue() {
 
 class DslList(val value: List<DslValue>) : DslValue() {
 	override fun getType() = DslValueType.List
-	override fun toString(name: String, option: ProcessOption): String = option.onListToString(name, value)
+	override fun toString(name: String, option: ProcessOption): String = option.onListToString(name, value, option)
 	override fun equals(other: Any?): Boolean {
 		if(this === other) return true
 		if(other !is DslList) return false
@@ -200,7 +200,7 @@ class DslType(private val type: DslValueType) : DslValue() {
 
 class DslSet(val value: Set<DslValue>) : DslValue() {
 	override fun getType() = DslValueType.Set
-	override fun toString(name: String, option: ProcessOption): String = option.onSetToString(name, value)
+	override fun toString(name: String, option: ProcessOption): String = option.onSetToString(name, value, option)
 	override fun equals(other: Any?): Boolean {
 		if(this === other) return true
 		if(other !is DslSet) return false
@@ -213,7 +213,7 @@ class DslSet(val value: Set<DslValue>) : DslValue() {
 
 class DslDict(val value: Map<DslValue, DslValue>) : DslValue() {
 	override fun getType() = DslValueType.Dict
-	override fun toString(name: String, option: ProcessOption): String = option.onDictToString(name, value)
+	override fun toString(name: String, option: ProcessOption): String = option.onDictToString(name, value, option)
 	override fun equals(other: Any?): Boolean {
 		if(this === other) return true
 		if(other !is DslDict) return false
@@ -228,7 +228,7 @@ class DslDict(val value: Map<DslValue, DslValue>) : DslValue() {
 
 class DslPair(val value: Pair<DslValue, DslValue>) : DslValue() {
 	override fun getType() = DslValueType.Pair
-	override fun toString(name: String, option: ProcessOption): String = option.onPairToString(name, value)
+	override fun toString(name: String, option: ProcessOption): String = option.onPairToString(name, value, option)
 	override fun equals(other: Any?): Boolean {
 		if(this === other) return true
 		if(other !is DslPair) return false
@@ -266,5 +266,9 @@ class DslValueState(val name: String, val modifier: DslFieldModifiers) {
 	}
 
 	fun getValue(symbol: Token?) = pValue ?: throw DslFieldNotInitializedException(symbol, name)
+
+	fun dump() {
+		println("${modifier.dumpString()} $name = ${pValue?.toString("", ProcessOption())}")
+	}
 
 }

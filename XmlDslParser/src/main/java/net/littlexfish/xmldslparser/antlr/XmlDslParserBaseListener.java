@@ -29,6 +29,42 @@ public class XmlDslParserBaseListener implements XmlDslParserListener {
 	 *
 	 * <p>The default implementation does nothing.</p>
 	 */
+	@Override public void enterRootStatements(XmlDslParser.RootStatementsContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
+	@Override public void exitRootStatements(XmlDslParser.RootStatementsContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
+	@Override public void enterRootStatement(XmlDslParser.RootStatementContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
+	@Override public void exitRootStatement(XmlDslParser.RootStatementContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
+	@Override public void enterExportDeclaration(XmlDslParser.ExportDeclarationContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
+	@Override public void exitExportDeclaration(XmlDslParser.ExportDeclarationContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
 	@Override public void enterAnysemi(XmlDslParser.AnysemiContext ctx) { }
 	/**
 	 * {@inheritDoc}
@@ -624,6 +660,18 @@ public class XmlDslParserBaseListener implements XmlDslParserListener {
 	 * <p>The default implementation does nothing.</p>
 	 */
 	@Override public void exitType(XmlDslParser.TypeContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
+	@Override public void enterImportStatement(XmlDslParser.ImportStatementContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
+	@Override public void exitImportStatement(XmlDslParser.ImportStatementContext ctx) { }
 
 	/**
 	 * {@inheritDoc}
