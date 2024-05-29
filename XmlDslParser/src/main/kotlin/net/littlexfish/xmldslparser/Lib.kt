@@ -11,7 +11,7 @@ import java.io.InputStream
 import java.io.OutputStream
 import java.nio.charset.Charset
 
-const val version = "0.2.0-beta"
+const val version = "0.2.1-beta"
 
 abstract class DslSource {
 	internal abstract fun toCharStream(): CharStream
