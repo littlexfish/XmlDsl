@@ -92,7 +92,8 @@ data class ParseErrorDetail(val text: String, val dslParseException: DslParseExc
 
 
 private fun createGlobalScope(env: Map<String, String?>, dsl: XmlDsl): DslScope {
-	return DslScope(dsl = dsl).apply {
+	return DslScopeImpl(dsl = dsl).apply {
+		ROOT_SCOPE = this
 		// pre-defined field
 		addGlobalField("VERSION", DslString(version))
 		addGlobalField("JAVA_VERSION", DslString(System.getProperty("java.version")))
@@ -163,7 +164,7 @@ private fun DslScope.addGlobalField(name: String, value: DslValue) {
 
 class XmlDsl(private val processOption: ProcessOption, val env: Map<String, String?>, val paths: Set<File>) {
 
-	internal val root = DslElement("<root>", DslScope(createGlobalScope(env, this)))
+	internal val root = DslElement("<root>", DslScopeImpl(createGlobalScope(env, this)))
 	internal val rootScope: DslScope
 		get() = root.scope
 
@@ -255,14 +256,14 @@ object XmlDslParser {
 					DslValueType.String, file.getType()))
 			return
 		}
-		val paths = currentScope.dsl.paths
+		val paths = currentScope.getDsl().paths
 		val f = findFile(file.value, paths)
 		if(f == null) {
 			errorHandler.handleException(lit.text, DslImportNotFoundException(lit.start, lit.stop, file.value))
 			return
 		}
 		val source = FileDslSource(f.absolutePath)
-		val dsl = parseXmlDsl(source, processOption, errorHandler, currentScope.dsl.env, paths)
+		val dsl = parseXmlDsl(source, processOption, errorHandler, currentScope.getDsl().env, paths)
 		currentScope.importScope(dsl.rootScope, ctx.IMPORT().symbol)
 	}
 
@@ -449,7 +450,7 @@ object XmlDslParser {
 						break
 					}
 					if(!expr.value) break
-					val subScope = DslScope(currentScope, setOf(JumpType.Next::class.java,
+					val subScope = DslScopeImpl(currentScope, setOf(JumpType.Next::class.java,
 						JumpType.Break::class.java, JumpType.Continue::class.java))
 					if(parseBlock(w.block(), processOption, errorHandler, currentElement, subScope) == JumpType.Break) break
 					expr = parseExpression(w.expression(), processOption, errorHandler, currentElement, currentScope)
@@ -477,7 +478,7 @@ object XmlDslParser {
 			}
 		}
 		for(dslValue in list.value) {
-			val subScope = DslScope(currentScope, setOf(JumpType.Next::class.java,
+			val subScope = DslScopeImpl(currentScope, setOf(JumpType.Next::class.java,
 				JumpType.Break::class.java, JumpType.Continue::class.java))
 			subScope.defineField(name, symbol, DslFieldModifiers(DslFieldModifiers.FieldState.Block))
 			subScope.trySetField(name, symbol, ctx.expression().start, ctx.expression().stop, dslValue)
@@ -488,7 +489,7 @@ object XmlDslParser {
 	private fun parseElementDeclaration(ctx: ElementDeclarationContext, processOption: ProcessOption,
 	                                    errorHandler: ParseErrorHandler, currentScope: DslScope): DslElement {
 		val name = parseIdentifier(ctx.identifier()).second
-		val subScope = DslScope(currentScope)
+		val subScope = DslScopeImpl(currentScope)
 		val element = DslElement(name, subScope)
 		parseBlock(ctx.block(), processOption, errorHandler, element, subScope)
 		return element
@@ -849,7 +850,7 @@ object XmlDslParser {
 						parseExpression(expr, processOption, errorHandler, currentElement, currentScope)
 					}
 					val paramMap = atomic.getParamListToMap(args, it.start, it.stop)
-					return atomic(paramMap, processOption, errorHandler, currentElement, currentScope) ?: DslNull
+					return atomic(paramMap, processOption, errorHandler, currentElement) ?: DslNull
 				}
 				catch(e: DslParseException) {
 					errorHandler.handleException(it.text, e)
@@ -1039,7 +1040,7 @@ object XmlDslParser {
 		}
 		if(params.size != pSet.size) return
 		val block = ctx.block()
-		val func = DslFunction(params.map { it.second }, block)
+		val func = DslFunction(params.map { it.second }, block, currentScope)
 		currentScope.trySetField(name, symbol, ctx.start, ctx.stop, func)
 	}
 

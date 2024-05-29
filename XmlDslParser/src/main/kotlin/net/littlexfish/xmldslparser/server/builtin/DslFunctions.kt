@@ -9,21 +9,23 @@ private fun panic(message: String): Nothing {
 	throw DslPanicException(message)
 }
 
+internal lateinit var ROOT_SCOPE: DslScope
+
 // terminal
 
-object PrintFunc : DslFunction(listOf("value"), null) {
-	override fun invoke(param: Map<String, DslValue>, processOption: ProcessOption,
+object PrintFunc : DslFunction(listOf("value"), null, ROOT_SCOPE) {
+	override fun onInvoke(processOption: ProcessOption,
 		errorHandler: ParseErrorHandler, currentElement: DslElement, currentScope: DslScope): DslValue? {
-		val value = param["value"]!!
+		val value = currentScope.getField("value", null)
 		processOption.onPrint(value, processOption)
 		return null
 	}
 }
 
-object PanicFunc : DslFunction(listOf("msg"), null) {
-	override fun invoke(param: Map<String, DslValue>, processOption: ProcessOption,
+object PanicFunc : DslFunction(listOf("msg"), null, ROOT_SCOPE) {
+	override fun onInvoke(processOption: ProcessOption,
 		errorHandler: ParseErrorHandler, currentElement: DslElement, currentScope: DslScope): DslValue? {
-		val message = param["msg"]!!
+		val message = currentScope.getField("msg", null)
 		processOption.onPanic(message, processOption)
 		return null
 	}
@@ -31,21 +33,21 @@ object PanicFunc : DslFunction(listOf("msg"), null) {
 
 // pair
 
-object PairFunc : DslFunction(listOf("first", "second"), null) {
-	override fun invoke(param: Map<String, DslValue>, processOption: ProcessOption,
+object PairFunc : DslFunction(listOf("first", "second"), null, ROOT_SCOPE) {
+	override fun onInvoke(processOption: ProcessOption,
 		errorHandler: ParseErrorHandler, currentElement: DslElement, currentScope: DslScope): DslValue {
-		val first = param["first"]!!
-		val second = param["second"]!!
+		val first = currentScope.getField("first", null)
+		val second = currentScope.getField("second", null)
 		return DslPair(Pair(first, second))
 	}
 }
 
 // dict
 
-object PairsFunc : DslFunction(listOf("d"), null) {
-	override fun invoke(param: Map<String, DslValue>, processOption: ProcessOption,
+object PairsFunc : DslFunction(listOf("d"), null, ROOT_SCOPE) {
+	override fun onInvoke(processOption: ProcessOption,
 		errorHandler: ParseErrorHandler, currentElement: DslElement, currentScope: DslScope): DslValue {
-		val d = param["d"]
+		val d = currentScope.getField("d", null)
 		if(d !is DslDict) {
 			panic("Parameter 1 not Dict type")
 		}
@@ -53,10 +55,10 @@ object PairsFunc : DslFunction(listOf("d"), null) {
 	}
 }
 
-object KeysFunc : DslFunction(listOf("d"), null) {
-	override fun invoke(param: Map<String, DslValue>, processOption: ProcessOption,
+object KeysFunc : DslFunction(listOf("d"), null, ROOT_SCOPE) {
+	override fun onInvoke(processOption: ProcessOption,
 		errorHandler: ParseErrorHandler, currentElement: DslElement, currentScope: DslScope): DslValue {
-		val d = param["d"]
+		val d = currentScope.getField("d", null)
 		if(d !is DslDict) {
 			panic("Parameter 1 not Dict type")
 		}
@@ -64,10 +66,10 @@ object KeysFunc : DslFunction(listOf("d"), null) {
 	}
 }
 
-object ValuesFunc : DslFunction(listOf("d"), null) {
-	override fun invoke(param: Map<String, DslValue>, processOption: ProcessOption,
+object ValuesFunc : DslFunction(listOf("d"), null, ROOT_SCOPE) {
+	override fun onInvoke(processOption: ProcessOption,
 		errorHandler: ParseErrorHandler, currentElement: DslElement, currentScope: DslScope): DslValue {
-		val d = param["d"]
+		val d =currentScope.getField("d", null)
 		if(d !is DslDict) {
 			panic("Parameter 1 not Dict type")
 		}
@@ -77,10 +79,10 @@ object ValuesFunc : DslFunction(listOf("d"), null) {
 
 // collection
 
-object LenFunc : DslFunction(listOf("value"), null) {
-	override fun invoke(param: Map<String, DslValue>, processOption: ProcessOption,
+object LenFunc : DslFunction(listOf("value"), null, ROOT_SCOPE) {
+	override fun onInvoke(processOption: ProcessOption,
 	                    errorHandler: ParseErrorHandler, currentElement: DslElement, currentScope: DslScope): DslValue {
-		return when(val value = param["value"]!!) {
+		return when(val value = currentScope.getField("value", null)) {
 			is DslList -> DslNumber(value.value.size.toDouble())
 			is DslSet -> DslNumber(value.value.size.toDouble())
 			is DslDict -> DslNumber(value.value.size.toDouble())
@@ -90,11 +92,11 @@ object LenFunc : DslFunction(listOf("value"), null) {
 	}
 }
 
-object IndexOfFunc : DslFunction(listOf("value", "element"), null) {
-	override fun invoke(param: Map<String, DslValue>, processOption: ProcessOption,
+object IndexOfFunc : DslFunction(listOf("value", "element"), null, ROOT_SCOPE) {
+	override fun onInvoke(processOption: ProcessOption,
 	                    errorHandler: ParseErrorHandler, currentElement: DslElement, currentScope: DslScope): DslValue {
-		val value = param["value"]!!
-		val element = param["element"]!!
+		val value = currentScope.getField("value", null)
+		val element = currentScope.getField("element", null)
 		return when(value) {
 			is DslList -> DslNumber(value.value.indexOf(element).toDouble())
 			is DslString -> {
@@ -106,11 +108,11 @@ object IndexOfFunc : DslFunction(listOf("value", "element"), null) {
 	}
 }
 
-object JoinFunc : DslFunction(listOf("value", "separator"), null) {
-	override fun invoke(param: Map<String, DslValue>, processOption: ProcessOption,
+object JoinFunc : DslFunction(listOf("value", "separator"), null, ROOT_SCOPE) {
+	override fun onInvoke(processOption: ProcessOption,
 	                    errorHandler: ParseErrorHandler, currentElement: DslElement, currentScope: DslScope): DslValue {
-		val value = param["value"]!!
-		val separator = param["separator"]!!
+		val value = currentScope.getField("value", null)
+		val separator = currentScope.getField("separator", null)
 		return when(value) {
 			is DslList -> DslString(value.value.joinToString(separator.toString("", processOption) ?: "<null>")
 			{ it.toString("", processOption) ?: "<null>" })
@@ -119,23 +121,23 @@ object JoinFunc : DslFunction(listOf("value", "separator"), null) {
 	}
 }
 
-object SplitFunc : DslFunction(listOf("value", "separator"), null) {
-	override fun invoke(param: Map<String, DslValue>, processOption: ProcessOption,
+object SplitFunc : DslFunction(listOf("value", "separator"), null, ROOT_SCOPE) {
+	override fun onInvoke(processOption: ProcessOption,
 	                    errorHandler: ParseErrorHandler, currentElement: DslElement, currentScope: DslScope): DslValue {
-		val value = param["value"]!!
-		val separator = param["separator"]!!
+		val value = currentScope.getField("value", null)
+		val separator = currentScope.getField("separator", null)
 		if(value !is DslString) panic("Parameter 1 not String type")
 		if(separator !is DslString) panic("Parameter 2 not String type")
 		return DslList(value.value.split(separator.value).map { DslString(it) })
 	}
 }
 
-object ReplaceFunc : DslFunction(listOf("value", "old", "new"), null) {
-	override fun invoke(param: Map<String, DslValue>, processOption: ProcessOption,
+object ReplaceFunc : DslFunction(listOf("value", "old", "new"), null, ROOT_SCOPE) {
+	override fun onInvoke(processOption: ProcessOption,
 	                    errorHandler: ParseErrorHandler, currentElement: DslElement, currentScope: DslScope): DslValue {
-		val value = param["value"]!!
-		val old = param["old"]!!
-		val new = param["new"]!!
+		val value = currentScope.getField("value", null)
+		val old = currentScope.getField("old", null)
+		val new = currentScope.getField("new", null)
 		if(value !is DslString) panic("Parameter 1 not String type")
 		if(old !is DslString) panic("Parameter 2 not String type")
 		if(new !is DslString) panic("Parameter 3 not String type")
@@ -143,28 +145,28 @@ object ReplaceFunc : DslFunction(listOf("value", "old", "new"), null) {
 	}
 }
 
-object TrimFunc : DslFunction(listOf("value"), null) {
-	override fun invoke(param: Map<String, DslValue>, processOption: ProcessOption,
+object TrimFunc : DslFunction(listOf("value"), null, ROOT_SCOPE) {
+	override fun onInvoke(processOption: ProcessOption,
 	                    errorHandler: ParseErrorHandler, currentElement: DslElement, currentScope: DslScope): DslValue {
-		val value = param["value"]!!
+		val value = currentScope.getField("value", null)
 		if(value !is DslString) panic("Parameter 1 not String type")
 		return DslString(value.value.trim())
 	}
 }
 
-object LowerFunc : DslFunction(listOf("value"), null) {
-	override fun invoke(param: Map<String, DslValue>, processOption: ProcessOption,
+object LowerFunc : DslFunction(listOf("value"), null, ROOT_SCOPE) {
+	override fun onInvoke(processOption: ProcessOption,
 	                    errorHandler: ParseErrorHandler, currentElement: DslElement, currentScope: DslScope): DslValue {
-		val value = param["value"]!!
+		val value = currentScope.getField("value", null)
 		if(value !is DslString) panic("Parameter 1 not String type")
 		return DslString(value.value.lowercase())
 	}
 }
 
-object UpperFunc : DslFunction(listOf("value"), null) {
-	override fun invoke(param: Map<String, DslValue>, processOption: ProcessOption,
+object UpperFunc : DslFunction(listOf("value"), null, ROOT_SCOPE) {
+	override fun onInvoke(processOption: ProcessOption,
 	                    errorHandler: ParseErrorHandler, currentElement: DslElement, currentScope: DslScope): DslValue {
-		val value = param["value"]!!
+		val value = currentScope.getField("value", null)
 		if(value !is DslString) panic("Parameter 1 not String type")
 		return DslString(value.value.uppercase())
 	}
@@ -172,20 +174,20 @@ object UpperFunc : DslFunction(listOf("value"), null) {
 
 // type
 
-object TypeOfFunc : DslFunction(listOf("value"), null) {
-	override fun invoke(param: Map<String, DslValue>, processOption: ProcessOption,
+object TypeOfFunc : DslFunction(listOf("value"), null, ROOT_SCOPE) {
+	override fun onInvoke(processOption: ProcessOption,
 	                    errorHandler: ParseErrorHandler, currentElement: DslElement, currentScope: DslScope): DslValue {
-		val value = param["value"]!!
+		val value = currentScope.getField("value", null)
 		return DslType(value.getType())
 	}
 }
 
 // format
 
-object ToIntFunc : DslFunction(listOf("value"), null) {
-	override fun invoke(param: Map<String, DslValue>, processOption: ProcessOption,
+object ToIntFunc : DslFunction(listOf("value"), null, ROOT_SCOPE) {
+	override fun onInvoke(processOption: ProcessOption,
 	                    errorHandler: ParseErrorHandler, currentElement: DslElement, currentScope: DslScope): DslValue {
-		return when(val value = param["value"]!!) {
+		return when(val value = currentScope.getField("value", null)) {
 			is DslNumber -> DslNumber(value.value.toInt().toDouble())
 			is DslBoolean -> DslNumber(if(value.value) 1.0 else 0.0)
 			is DslString -> {
@@ -201,19 +203,19 @@ object ToIntFunc : DslFunction(listOf("value"), null) {
 	}
 }
 
-object ToStringFunc : DslFunction(listOf("value"), null) {
-	override fun invoke(param: Map<String, DslValue>, processOption: ProcessOption,
+object ToStringFunc : DslFunction(listOf("value"), null, ROOT_SCOPE) {
+	override fun onInvoke(processOption: ProcessOption,
 	                    errorHandler: ParseErrorHandler, currentElement: DslElement, currentScope: DslScope): DslValue {
-		val value = param["value"]!!
+		val value = currentScope.getField("value", null)
 		return DslString(value.toString("", processOption) ?: "<null>")
 	}
 }
 
-object FormatFunc : DslFunction(listOf("value", "format"), null) {
-	override fun invoke(param: Map<String, DslValue>, processOption: ProcessOption,
+object FormatFunc : DslFunction(listOf("value", "format"), null, ROOT_SCOPE) {
+	override fun onInvoke(processOption: ProcessOption,
 	                    errorHandler: ParseErrorHandler, currentElement: DslElement, currentScope: DslScope): DslValue {
-		val value = param["value"]!!
-		val format = param["format"]!!
+		val value = currentScope.getField("value", null)
+		val format = currentScope.getField("format", null)
 		if(value !is DslString) panic("Parameter 1 not String type")
 		val str = value.value
 		return when(format) {
@@ -223,10 +225,10 @@ object FormatFunc : DslFunction(listOf("value", "format"), null) {
 	}
 }
 
-object ToListFunc : DslFunction(listOf("value"), null) {
-	override fun invoke(param: Map<String, DslValue>, processOption: ProcessOption,
+object ToListFunc : DslFunction(listOf("value"), null, ROOT_SCOPE) {
+	override fun onInvoke(processOption: ProcessOption,
 		errorHandler: ParseErrorHandler, currentElement: DslElement, currentScope: DslScope): DslValue {
-		return when(val value = param["value"]!!) {
+		return when(val value = currentScope.getField("value", null)) {
 			is DslList -> value
 			is DslSet -> DslList(value.value.toList())
 			is DslDict -> value.toPairList()
@@ -236,10 +238,10 @@ object ToListFunc : DslFunction(listOf("value"), null) {
 	}
 }
 
-object ToSetFunc : DslFunction(listOf("value"), null) {
-	override fun invoke(param: Map<String, DslValue>, processOption: ProcessOption,
+object ToSetFunc : DslFunction(listOf("value"), null, ROOT_SCOPE) {
+	override fun onInvoke(processOption: ProcessOption,
 		errorHandler: ParseErrorHandler, currentElement: DslElement, currentScope: DslScope): DslValue {
-		return when(val value = param["value"]!!) {
+		return when(val value = currentScope.getField("value", null)) {
 			is DslList -> DslSet(value.value.toSet())
 			is DslSet -> value
 			is DslDict -> DslSet(value.toPairList().value.toSet())
@@ -251,146 +253,146 @@ object ToSetFunc : DslFunction(listOf("value"), null) {
 
 // math
 
-private fun requireNumber(value: DslValue?): DslNumber {
+private fun requireNumber(value: DslValue): DslNumber {
 	if(value !is DslNumber) panic("Parameter 1 not Number type")
 	return value
 }
 
-object FloorFunc : DslFunction(listOf("value"), null) {
-	override fun invoke(param: Map<String, DslValue>, processOption: ProcessOption,
+object FloorFunc : DslFunction(listOf("value"), null, ROOT_SCOPE) {
+	override fun onInvoke(processOption: ProcessOption,
 	                    errorHandler: ParseErrorHandler, currentElement: DslElement, currentScope: DslScope): DslValue {
-		return DslNumber(floor(requireNumber(param["value"]).value))
+		return DslNumber(floor(requireNumber(currentScope.getField("value", null)).value))
 	}
 }
 
-object CeilFunc : DslFunction(listOf("value"), null) {
-	override fun invoke(param: Map<String, DslValue>, processOption: ProcessOption,
+object CeilFunc : DslFunction(listOf("value"), null, ROOT_SCOPE) {
+	override fun onInvoke(processOption: ProcessOption,
 	                    errorHandler: ParseErrorHandler, currentElement: DslElement, currentScope: DslScope): DslValue {
-		return DslNumber(ceil(requireNumber(param["value"]).value))
+		return DslNumber(ceil(requireNumber(currentScope.getField("value", null)).value))
 	}
 }
 
-object RoundFunc : DslFunction(listOf("value"), null) {
-	override fun invoke(param: Map<String, DslValue>, processOption: ProcessOption,
+object RoundFunc : DslFunction(listOf("value"), null, ROOT_SCOPE) {
+	override fun onInvoke(processOption: ProcessOption,
 	                    errorHandler: ParseErrorHandler, currentElement: DslElement, currentScope: DslScope): DslValue {
-		return DslNumber(round(requireNumber(param["value"]).value))
+		return DslNumber(round(requireNumber(currentScope.getField("value", null)).value))
 	}
 }
 
-object AbsFunc : DslFunction(listOf("value"), null) {
-	override fun invoke(param: Map<String, DslValue>, processOption: ProcessOption,
+object AbsFunc : DslFunction(listOf("value"), null, ROOT_SCOPE) {
+	override fun onInvoke(processOption: ProcessOption,
 	                    errorHandler: ParseErrorHandler, currentElement: DslElement, currentScope: DslScope): DslValue {
-		return DslNumber(requireNumber(param["value"]).value.absoluteValue)
+		return DslNumber(requireNumber(currentScope.getField("value", null)).value.absoluteValue)
 	}
 }
 
-object SqrtFunc : DslFunction(listOf("value"), null) {
-	override fun invoke(param: Map<String, DslValue>, processOption: ProcessOption,
+object SqrtFunc : DslFunction(listOf("value"), null, ROOT_SCOPE) {
+	override fun onInvoke(processOption: ProcessOption,
 	                    errorHandler: ParseErrorHandler, currentElement: DslElement, currentScope: DslScope): DslValue {
-		return DslNumber(sqrt(requireNumber(param["value"]).value))
+		return DslNumber(sqrt(requireNumber(currentScope.getField("value", null)).value))
 	}
 }
 
-object PowFunc : DslFunction(listOf("base", "exponent"), null) {
-	override fun invoke(param: Map<String, DslValue>, processOption: ProcessOption,
+object PowFunc : DslFunction(listOf("base", "exponent"), null, ROOT_SCOPE) {
+	override fun onInvoke(processOption: ProcessOption,
 	                    errorHandler: ParseErrorHandler, currentElement: DslElement, currentScope: DslScope): DslValue {
-		val base = requireNumber(param["base"])
-		val exponent = requireNumber(param["exponent"])
+		val base = requireNumber(currentScope.getField("base", null))
+		val exponent = requireNumber(currentScope.getField("exponent", null))
 		return DslNumber(base.value.pow(exponent.value))
 	}
 }
 
-object ToRadFunc : DslFunction(listOf("degree"), null) {
-	override fun invoke(param: Map<String, DslValue>, processOption: ProcessOption,
+object ToRadFunc : DslFunction(listOf("degree"), null, ROOT_SCOPE) {
+	override fun onInvoke(processOption: ProcessOption,
 	                    errorHandler: ParseErrorHandler, currentElement: DslElement, currentScope: DslScope): DslValue {
-		return DslNumber(toRadians(requireNumber(param["degree"]).value))
+		return DslNumber(toRadians(requireNumber(currentScope.getField("degree", null)).value))
 	}
 }
 
-object ToDegFunc : DslFunction(listOf("radian"), null) {
-	override fun invoke(param: Map<String, DslValue>, processOption: ProcessOption,
+object ToDegFunc : DslFunction(listOf("radian"), null, ROOT_SCOPE) {
+	override fun onInvoke(processOption: ProcessOption,
 	                    errorHandler: ParseErrorHandler, currentElement: DslElement, currentScope: DslScope): DslValue {
-		return DslNumber(Math.toDegrees(requireNumber(param["radian"]).value))
+		return DslNumber(Math.toDegrees(requireNumber(currentScope.getField("radian", null)).value))
 	}
 }
 
-object SinFunc : DslFunction(listOf("value"), null) {
-	override fun invoke(param: Map<String, DslValue>, processOption: ProcessOption,
+object SinFunc : DslFunction(listOf("value"), null, ROOT_SCOPE) {
+	override fun onInvoke(processOption: ProcessOption,
 	                    errorHandler: ParseErrorHandler, currentElement: DslElement, currentScope: DslScope): DslValue {
-		return DslNumber(sin(requireNumber(param["value"]).value))
+		return DslNumber(sin(requireNumber(currentScope.getField("value", null)).value))
 	}
 }
 
-object CosFunc : DslFunction(listOf("value"), null) {
-	override fun invoke(param: Map<String, DslValue>, processOption: ProcessOption,
+object CosFunc : DslFunction(listOf("value"), null, ROOT_SCOPE) {
+	override fun onInvoke(processOption: ProcessOption,
 	                    errorHandler: ParseErrorHandler, currentElement: DslElement, currentScope: DslScope): DslValue {
-		return DslNumber(cos(requireNumber(param["value"]).value))
+		return DslNumber(cos(requireNumber(currentScope.getField("value", null)).value))
 	}
 }
 
-object TanFunc : DslFunction(listOf("value"), null) {
-	override fun invoke(param: Map<String, DslValue>, processOption: ProcessOption,
+object TanFunc : DslFunction(listOf("value"), null, ROOT_SCOPE) {
+	override fun onInvoke(processOption: ProcessOption,
 	                    errorHandler: ParseErrorHandler, currentElement: DslElement, currentScope: DslScope): DslValue {
-		return DslNumber(tan(requireNumber(param["value"]).value))
+		return DslNumber(tan(requireNumber(currentScope.getField("value", null)).value))
 	}
 }
 
-object AsinFunc : DslFunction(listOf("value"), null) {
-	override fun invoke(param: Map<String, DslValue>, processOption: ProcessOption,
+object AsinFunc : DslFunction(listOf("value"), null, ROOT_SCOPE) {
+	override fun onInvoke(processOption: ProcessOption,
 	                    errorHandler: ParseErrorHandler, currentElement: DslElement, currentScope: DslScope): DslValue {
-		return DslNumber(asin(requireNumber(param["value"]).value))
+		return DslNumber(asin(requireNumber(currentScope.getField("value", null)).value))
 	}
 }
 
-object AcosFunc : DslFunction(listOf("value"), null) {
-	override fun invoke(param: Map<String, DslValue>, processOption: ProcessOption,
+object AcosFunc : DslFunction(listOf("value"), null, ROOT_SCOPE) {
+	override fun onInvoke(processOption: ProcessOption,
 	                    errorHandler: ParseErrorHandler, currentElement: DslElement, currentScope: DslScope): DslValue {
-		return DslNumber(acos(requireNumber(param["value"]).value))
+		return DslNumber(acos(requireNumber(currentScope.getField("value", null)).value))
 	}
 }
 
-object AtanFunc : DslFunction(listOf("value"), null) {
-	override fun invoke(param: Map<String, DslValue>, processOption: ProcessOption,
+object AtanFunc : DslFunction(listOf("value"), null, ROOT_SCOPE) {
+	override fun onInvoke(processOption: ProcessOption,
 	                    errorHandler: ParseErrorHandler, currentElement: DslElement, currentScope: DslScope): DslValue {
-		return DslNumber(atan(requireNumber(param["value"]).value))
+		return DslNumber(atan(requireNumber(currentScope.getField("value", null)).value))
 	}
 }
 
-object LogFunc : DslFunction(listOf("value", "base"), null) {
-	override fun invoke(param: Map<String, DslValue>, processOption: ProcessOption,
+object LogFunc : DslFunction(listOf("value", "base"), null, ROOT_SCOPE) {
+	override fun onInvoke(processOption: ProcessOption,
 	                    errorHandler: ParseErrorHandler, currentElement: DslElement, currentScope: DslScope): DslValue {
-		val value = requireNumber(param["value"])
-		val base = requireNumber(param["base"])
+		val value = requireNumber(currentScope.getField("value", null))
+		val base = requireNumber(currentScope.getField("base", null))
 		return DslNumber(log(value.value, base.value))
 	}
 }
 
-object Log10Func : DslFunction(listOf("value"), null) {
-	override fun invoke(param: Map<String, DslValue>, processOption: ProcessOption,
+object Log10Func : DslFunction(listOf("value"), null, ROOT_SCOPE) {
+	override fun onInvoke(processOption: ProcessOption,
 	                    errorHandler: ParseErrorHandler, currentElement: DslElement, currentScope: DslScope): DslValue {
-		return DslNumber(log10(requireNumber(param["value"]).value))
+		return DslNumber(log10(requireNumber(currentScope.getField("value", null)).value))
 	}
 }
 
-object ExpFunc : DslFunction(listOf("value"), null) {
-	override fun invoke(param: Map<String, DslValue>, processOption: ProcessOption,
+object ExpFunc : DslFunction(listOf("value"), null, ROOT_SCOPE) {
+	override fun onInvoke(processOption: ProcessOption,
 	                    errorHandler: ParseErrorHandler, currentElement: DslElement, currentScope: DslScope): DslValue {
-		return DslNumber(exp(requireNumber(param["value"]).value))
+		return DslNumber(exp(requireNumber(currentScope.getField("value", null)).value))
 	}
 }
 
-object RandomFunc : DslFunction(listOf(), null) {
-	override fun invoke(param: Map<String, DslValue>, processOption: ProcessOption,
+object RandomFunc : DslFunction(listOf(), null, ROOT_SCOPE) {
+	override fun onInvoke(processOption: ProcessOption,
 	                    errorHandler: ParseErrorHandler, currentElement: DslElement, currentScope: DslScope): DslValue {
 		return DslNumber(random())
 	}
 }
 
-object RandomRangeFunc : DslFunction(listOf("min", "max"), null) {
-	override fun invoke(param: Map<String, DslValue>, processOption: ProcessOption,
+object RandomRangeFunc : DslFunction(listOf("min", "max"), null, ROOT_SCOPE) {
+	override fun onInvoke(processOption: ProcessOption,
 	                    errorHandler: ParseErrorHandler, currentElement: DslElement, currentScope: DslScope): DslValue {
-		val min = requireNumber(param["min"])
-		val max = requireNumber(param["max"])
+		val min = requireNumber(currentScope.getField("min", null))
+		val max = requireNumber(currentScope.getField("max", null))
 		return DslNumber(random() * (max.value - min.value) + min.value)
 	}
 }

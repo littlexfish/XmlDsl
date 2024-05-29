@@ -153,9 +153,12 @@ class DslElement(private val name: String, val scope: DslScope) : DslValue() {
 
 }
 
-open class DslFunction(private val paramNames: List<String>, private val block: BlockContext?) : DslValue() {
+open class DslFunction(private val paramNames: List<String>, private val block: BlockContext?, currentScope: DslScope) : DslValue() {
+
+	private val scopeDelegate = DslScopeDelegate(currentScope, setOf(JumpType.Next::class.java, JumpType.Return::class.java))
+
 	override fun getType() = DslValueType.Function
-	override fun toString(name: String, option: ProcessOption): String = "<element#${hashCode().toUInt().toString(16)}>"
+	override fun toString(name: String, option: ProcessOption): String = "<function#${hashCode().toUInt().toString(16)}>"
 	override fun equals(other: Any?): Boolean {
 		return other is DslFunction
 	}
@@ -170,14 +173,18 @@ open class DslFunction(private val paramNames: List<String>, private val block: 
 		return paramNames.zip(list).toMap()
 	}
 	open operator fun invoke(param: Map<String, DslValue>, processOption: ProcessOption, errorHandler: ParseErrorHandler,
-	        currentElement: DslElement, currentScope: DslScope): DslValue? {
-		block ?: throw IllegalStateException("User function shall not have null block")
-		val subScope = DslScope(currentScope, setOf(JumpType.Next::class.java, JumpType.Return::class.java))
+	        currentElement: DslElement): DslValue? {
+		val subScope = scopeDelegate.copy()
 		for((name, value) in param) {
 			subScope.defineField(name, null, DslFieldModifiers())
 			subScope.trySetField(name, null, null, null, value)
 		}
-		return when(val jmp = XmlDslParser.parseBlock(block, processOption, errorHandler, currentElement, subScope)) {
+		return onInvoke(processOption, errorHandler, currentElement, subScope)
+	}
+	open fun onInvoke(processOption: ProcessOption, errorHandler: ParseErrorHandler,
+	                  currentElement: DslElement, currentScope: DslScope): DslValue? {
+		block ?: throw IllegalStateException("User function shall not have null block")
+		return when(val jmp = XmlDslParser.parseBlock(block, processOption, errorHandler, currentElement, currentScope)) {
 			JumpType.Next -> null
 			is JumpType.Return -> jmp.value
 			else -> null
